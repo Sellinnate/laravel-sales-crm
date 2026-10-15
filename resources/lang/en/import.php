@@ -1,0 +1,37 @@
+<?php
+
+return [
+    'groups' => ['deal' => 'Deal', 'amounts' => 'Amounts and offer', 'company' => 'Company', 'person' => 'Person', 'custom' => 'Custom fields'],
+    'fields' => [
+        'external_ref' => 'External reference (key)', 'title' => 'Title', 'stage' => 'Stage', 'sub_status' => 'Sub-status', 'priority' => 'Priority',
+        'owner' => 'Owner', 'source' => 'Source', 'tags' => 'Tags', 'next_step' => 'Next step', 'blocker' => 'Customer blocker',
+        'approval_note' => 'To approve', 'missing_data' => 'Missing data', 'call_context' => 'Call context', 'closing_tip' => 'Closing tip',
+        'expected_close_date' => 'Expected close date', 'last_contacted_at' => 'Last contact', 'data_verified_at' => 'Data last verified',
+        'note' => 'Note (free text)', 'amount_once' => 'One-off amount', 'deposit' => 'Deposit', 'recurring_options' => 'Recurring and options',
+        'payment_terms' => 'Payment terms', 'offer_details' => 'Offer details', 'offer_valid_until' => 'Offer valid until', 'commission' => 'Commission',
+        'signature' => 'Signature', 'payment' => 'Payment', 'company' => 'Company', 'company_vat' => 'Company VAT number', 'company_website' => 'Company website',
+        'person_name' => 'Full name', 'person_email' => 'Email', 'person_mobile' => 'Mobile', 'person_phone' => 'Phone',
+        'person_phone_source' => 'Contact source', 'person_job_title' => 'Job title',
+    ],
+    'missing_title' => 'The title or the company is missing.',
+    'key_too_long' => 'The external reference exceeds 64 characters.',
+    'unexpected_error' => 'Unexpected error: the row was not imported.',
+    'stopped' => 'The rows already imported stay; a new import with the same key updates them.',
+    'no_stage' => 'No stage to import the deal into.',
+    'user_gone' => 'The user who started the import no longer exists.',
+    'note_prefix' => 'From the import of «:file»:',
+    'row' => 'Row',
+    'reason' => 'Reason',
+    'warnings' => [
+        'priority' => 'priority «:value» not recognised',
+        'owner' => 'owner «:value» is not a user of this workspace',
+        'source' => 'source «:value» not recognised',
+        'signature' => 'signature «:value» imported as «to sign»: record the signature with its evidence',
+        'payment' => 'payment «:value» imported as «expected»: record the payment with its evidence',
+        'signature_unknown' => 'signature «:value» not recognised',
+        'payment_unknown' => 'payment «:value» not recognised',
+        'lost_without_reason' => 'lost deal without a reason: imported with «Other»',
+        'requirements' => 'in «:stage» missing: :fields',
+        'stays' => 'stays in «:stage»: :reason',
+    ],
+];

@@ -1,0 +1,11 @@
+parameters:
+    level: 8
+    phpVersion: 80200
+    paths:
+        - src
+        - database
+    tmpDir: build/phpstan
+    excludePaths:
+        analyseAndScan:
+            - src/Livewire
+            - src/Mcp

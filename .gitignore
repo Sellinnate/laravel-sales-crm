@@ -1,0 +1,17 @@
+/vendor
+/node_modules
+/site
+/build
+/.phpunit.cache
+.phpunit.result.cache
+composer.lock
+/coverage
+.php-cs-fixer.cache
+.DS_Store
+/workbench/bootstrap/cache/*
+!/workbench/bootstrap/cache/.gitkeep
+/workbench/database/database.sqlite
+/workbench/storage/*
+!/workbench/storage/.gitkeep
+/.selli
+.env
