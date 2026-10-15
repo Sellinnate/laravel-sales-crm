@@ -67,8 +67,8 @@ final class Crm
     {
         $connection = self::db();
 
-        // Laravel 11 has no afterRollBack().
-        if (is_callable([$connection, 'afterRollBack'])) { // @phpstan-ignore function.alreadyNarrowedType
+        // Laravel 11 has no afterRollBack() (and is_callable() is fooled by the macros of the connection).
+        if (method_exists($connection, 'afterRollBack')) { // @phpstan-ignore function.alreadyNarrowedType
             $connection->afterRollBack($callback);
         }
     }
