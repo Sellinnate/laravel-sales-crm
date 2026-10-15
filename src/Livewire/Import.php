@@ -84,7 +84,10 @@ class Import extends Component
 
     public function import(): ?ImportModel
     {
-        return $this->importId === null ? null : ImportModel::query()->with('pipeline.stages')->find($this->importId);
+        $import = $this->importId === null ? null : ImportModel::query()->with('pipeline.stages')->find($this->importId);
+
+        // On every request: the id comes from the URL and from the browser.
+        return $import !== null && Gate::forUser($this->viewer())->allows('create', [Pipeline::class, $import->workspaceRef()]) ? $import : null;
     }
 
     public function uploadFile(): void

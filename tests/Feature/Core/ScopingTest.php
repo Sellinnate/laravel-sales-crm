@@ -2,25 +2,30 @@
 
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Sellinnate\SalesCrm\Actions\ManageActivities;
 use Sellinnate\SalesCrm\Actions\MoveDeal;
 use Sellinnate\SalesCrm\Actions\UpdateDeal;
 use Sellinnate\SalesCrm\Authorization\Access;
+use Sellinnate\SalesCrm\Enums\ImportStatus;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Livewire\Agenda;
 use Sellinnate\SalesCrm\Livewire\Companies;
 use Sellinnate\SalesCrm\Livewire\CompanyPage;
 use Sellinnate\SalesCrm\Livewire\DealPanel;
+use Sellinnate\SalesCrm\Livewire\Import as ImportPage;
 use Sellinnate\SalesCrm\Livewire\People;
 use Sellinnate\SalesCrm\Models\Activity;
 use Sellinnate\SalesCrm\Models\Company;
 use Sellinnate\SalesCrm\Models\Deal;
+use Sellinnate\SalesCrm\Models\Import;
 use Sellinnate\SalesCrm\Models\Note;
 use Sellinnate\SalesCrm\Models\Person;
 use Sellinnate\SalesCrm\Models\Pipeline;
 use Sellinnate\SalesCrm\Services\DealFields;
+use Sellinnate\SalesCrm\Workspaces\Workspace;
 
 beforeEach(function () {
     useTeams();
@@ -202,4 +207,18 @@ it('checks the access to a record on every request of an open page, not only on 
 
     $panel->call('$refresh')->assertStatus(404);
     $page->call('$refresh')->assertStatus(404);
+});
+
+it('never shows the import of another workspace when the browser changes its id', function () {
+    Storage::fake('local');
+    $this->alice->forceFill(['is_admin' => true])->save();
+    $this->bob->forceFill(['is_admin' => true])->save();
+    Storage::disk('local')->put('sales-crm/imports/beta.csv', "Title,Company\nSecret deal,Beta Corp\n");
+    $import = new Import(['pipeline_id' => $this->betaDeal->pipeline_id, 'disk' => 'local', 'stored_path' => 'sales-crm/imports/beta.csv', 'original_filename' => 'beta-secret.csv', 'status' => ImportStatus::cases()[0], 'user_id' => $this->bob->id]);
+    $import->setWorkspace(Workspace::of($this->beta))->save();
+
+    Livewire::actingAs($this->alice->fresh())->test(ImportPage::class)
+        ->set('importId', $import->id)
+        ->assertDontSee('beta-secret.csv')
+        ->assertDontSee('Secret deal');
 });
