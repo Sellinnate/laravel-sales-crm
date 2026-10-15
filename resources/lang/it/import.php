@@ -1,0 +1,37 @@
+<?php
+
+return [
+    'groups' => ['deal' => 'Trattativa', 'amounts' => 'Importi e offerta', 'company' => 'Azienda', 'person' => 'Persona', 'custom' => 'Campi personalizzati'],
+    'fields' => [
+        'external_ref' => 'Riferimento esterno (chiave)', 'title' => 'Titolo', 'stage' => 'Fase', 'sub_status' => 'Sotto-stato', 'priority' => 'Priorità',
+        'owner' => 'Owner', 'source' => 'Fonte', 'tags' => 'Tag', 'next_step' => 'Prossimo passo', 'blocker' => 'Blocco o dubbio del cliente',
+        'approval_note' => 'Da approvare', 'missing_data' => 'Dati mancanti', 'call_context' => 'Contesto per la chiamata', 'closing_tip' => 'Consiglio di chiusura',
+        'expected_close_date' => 'Chiusura prevista', 'last_contacted_at' => 'Ultimo contatto', 'data_verified_at' => 'Ultima verifica dei dati',
+        'note' => 'Nota (testo libero)', 'amount_once' => 'Importo una tantum', 'deposit' => 'Acconto', 'recurring_options' => 'Ricorrenti e opzioni',
+        'payment_terms' => 'Condizioni di pagamento', 'offer_details' => 'Dettagli dell\'offerta', 'offer_valid_until' => 'Validità dell\'offerta', 'commission' => 'Compenso',
+        'signature' => 'Firma', 'payment' => 'Incasso', 'company' => 'Azienda', 'company_vat' => 'Partita IVA dell\'azienda', 'company_website' => 'Sito dell\'azienda',
+        'person_name' => 'Nome e cognome', 'person_email' => 'Email', 'person_mobile' => 'Cellulare', 'person_phone' => 'Telefono',
+        'person_phone_source' => 'Fonte del recapito', 'person_job_title' => 'Ruolo in azienda',
+    ],
+    'missing_title' => 'Manca il titolo o l\'azienda.',
+    'key_too_long' => 'Il riferimento esterno supera i 64 caratteri.',
+    'unexpected_error' => 'Errore imprevisto: la riga non è stata importata.',
+    'stopped' => 'Le righe già importate restano; un nuovo import con la stessa chiave le aggiorna.',
+    'no_stage' => 'Nessuna fase in cui importare la trattativa.',
+    'user_gone' => 'Chi ha avviato l\'import non esiste più.',
+    'note_prefix' => 'Dall\'import di «:file»:',
+    'row' => 'Riga',
+    'reason' => 'Motivo',
+    'warnings' => [
+        'priority' => 'priorità «:value» non riconosciuta',
+        'owner' => 'owner «:value» non tra gli utenti di questo workspace',
+        'source' => 'fonte «:value» non riconosciuta',
+        'signature' => 'firma «:value» importata come «da firmare»: registra la firma con la sua evidenza',
+        'payment' => 'incasso «:value» importato come «atteso»: registra l\'incasso con la sua evidenza',
+        'signature_unknown' => 'firma «:value» non riconosciuta',
+        'payment_unknown' => 'incasso «:value» non riconosciuto',
+        'lost_without_reason' => 'trattativa persa senza motivo: importata con «Altro»',
+        'requirements' => 'in «:stage» manca: :fields',
+        'stays' => 'resta in «:stage»: :reason',
+    ],
+];
