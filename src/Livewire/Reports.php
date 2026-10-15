@@ -41,6 +41,14 @@ class Reports extends Component
         $this->to = $to->toDateString();
     }
 
+    /**
+     * The owners of another workspace: a filter left behind would stay on without its select.
+     */
+    public function updatedWorkspace(): void
+    {
+        $this->owner = '';
+    }
+
     public function render(): View
     {
         return $this->page('sales-crm::livewire.reports', (string) __('sales-crm::ui.nav.reports'));

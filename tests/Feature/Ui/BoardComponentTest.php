@@ -174,3 +174,11 @@ it('never lets the browser choose the pending move of the requirements form', fu
     expect(fn () => Livewire::test(DealPanel::class, ['dealId' => SalesCrm::shared()->createDeal(['title' => 'Locked'], $this->seller)->id])->set('pendingStage', 1))
         ->toThrow(CannotUpdateLockedPropertyException::class);
 });
+
+it('forgets the selection of the list when other rows are shown', function () {
+    $deal = SalesCrm::shared()->createDeal(['title' => 'Selected'], $this->seller);
+
+    Livewire::test(DealsBoard::class)->set('view', 'list')
+        ->set('selected', [$deal->id])->call('toggleQuick', 'p1')->assertSet('selected', [])
+        ->set('selected', [$deal->id])->call('resetFilters')->assertSet('selected', []);
+});

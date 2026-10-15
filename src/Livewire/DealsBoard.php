@@ -242,6 +242,8 @@ class DealsBoard extends Component
             ? array_values(array_diff($this->quick, [$filter]))
             : [...$this->quick, $filter];
         $this->limits = [];
+        // Other rows now: a selection of rows no longer shown never reaches a bulk action.
+        $this->selected = [];
         $this->resetPage();
     }
 
@@ -249,6 +251,8 @@ class DealsBoard extends Component
     {
         $this->reset('search', 'quick', 'owner', 'priority', 'source', 'tag', 'closed');
         $this->limits = [];
+        // Other rows now: a selection of rows no longer shown never reaches a bulk action.
+        $this->selected = [];
         $this->resetPage();
     }
 
@@ -676,6 +680,8 @@ class DealsBoard extends Component
         $this->listColumns = implode(',', $state['columns']);
         $this->cardFields = implode(',', $state['card']);
         $this->limits = [];
+        // Other rows now: a selection of rows no longer shown never reaches a bulk action.
+        $this->selected = [];
         $this->resetPage();
         unset($this->currentPipeline, $this->columns, $this->deals);
     }

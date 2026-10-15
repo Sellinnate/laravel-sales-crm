@@ -30,7 +30,13 @@ class InboundWebhookController extends Controller
 
         abort_unless(hash_equals($expected, str_starts_with($signature, 'sha256=') ? substr($signature, 7) : $signature), 401);
 
-        $payload = $request->json()->all();
+        $payload = json_decode($request->getContent(), true);
+
+        // A body that isn't a JSON object (cut, form-encoded) is an error of the integration, not "no email".
+        if (! is_array($payload) || array_is_list($payload) && $payload !== []) {
+            return new JsonResponse(['message' => 'The body must be a JSON object: one email, or {"emails": [...]}.'], 400);
+        }
+
         $emails = isset($payload['emails']) && is_array($payload['emails']) ? $payload['emails'] : [$payload];
         $stored = 0;
         $failed = 0;
@@ -38,6 +44,13 @@ class InboundWebhookController extends Controller
         // Refused whole, never cut: the sender splits the batch and retries, no email is lost.
         if (count($emails) > self::MAX_BATCH) {
             return new JsonResponse(['message' => 'At most '.self::MAX_BATCH.' emails per request.', 'max' => self::MAX_BATCH], 413);
+        }
+
+        // An item that isn't an email object fails every retry: the batch is refused before storing any.
+        $invalid = array_keys(array_filter($emails, fn (mixed $email): bool => ! is_array($email)));
+
+        if ($invalid !== []) {
+            return new JsonResponse(['message' => 'Every email must be a JSON object.', 'invalid' => $invalid], 422);
         }
 
         foreach ($emails as $email) {

@@ -229,7 +229,10 @@ The body is one email, or `{"emails": [ ... ]}` with up to 100:
 The response is `202 Accepted` with `{"received": 1, "stored": 1, "failed": 0}`.
 When an email of the batch could not be processed (a deadlock, the database
 away) the response is `503` with the same counters: retry the whole batch, the
-emails already stored are recognised by their Message-ID and skipped. A batch of
+emails already stored are recognised by their Message-ID and skipped. A body that isn't a JSON
+object gets `400`, a batch with an item that isn't an email object gets `422`
+(`{"invalid": [indexes]}`): nothing of it is stored, fix it before sending it
+again. A batch of
 more than 100 emails is refused whole with `413` (`{"max": 100}`): split it and
 send it again, nothing of it was stored.
 

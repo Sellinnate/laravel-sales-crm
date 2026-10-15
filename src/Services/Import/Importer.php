@@ -575,7 +575,7 @@ class Importer
         $key = $import->workspaceRef()?->key() ?? '';
 
         if (! isset($this->owners[$key])) {
-            $owners = [];
+            $candidates = [];
             $first = [];
 
             foreach ($this->access->members($import->workspaceRef())->get() as $user) {
@@ -586,13 +586,23 @@ class Importer
                     continue;
                 }
 
-                $owners[Str::lower((string) Crm::userEmail($user))] = $id;
-                $owners[Str::lower(Crm::userName($user))] = $id;
+                $candidates[Str::lower((string) Crm::userEmail($user))][] = $id;
+                $candidates[Str::lower(Crm::userName($user))][] = $id;
                 $first[Str::lower(Crm::firstName(Crm::userName($user)))][] = $id;
             }
 
+            // A name (or an email) shared by two users says nothing of which one: left unmapped,
+            // so the row warns instead of giving the deal to either.
+            $owners = [];
+
+            foreach ($candidates as $name => $ids) {
+                if (count(array_unique($ids, SORT_REGULAR)) === 1) {
+                    $owners[$name] = $ids[0];
+                }
+            }
+
             foreach ($first as $name => $ids) {
-                if (count($ids) === 1) {
+                if (count(array_unique($ids, SORT_REGULAR)) === 1) {
                     $owners[$name] ??= $ids[0];
                 }
             }

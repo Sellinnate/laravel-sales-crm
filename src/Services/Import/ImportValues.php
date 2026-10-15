@@ -45,7 +45,8 @@ class ImportValues
             $decimals = '00';
         }
 
-        return $whole === '' ? null : (int) $whole * 100 + (int) $decimals;
+        // More than 15 digits is an id or a phone number, not an amount (and would overflow).
+        return $whole === '' || strlen(ltrim($whole, '0')) > 15 ? null : (int) $whole * 100 + (int) $decimals;
     }
 
     /**

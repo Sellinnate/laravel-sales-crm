@@ -3,6 +3,7 @@
 namespace Sellinnate\SalesCrm\Livewire;
 
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -14,12 +15,14 @@ use Sellinnate\SalesCrm\Actions\SaveStage;
 use Sellinnate\SalesCrm\Actions\SaveWorkspaceSettings;
 use Sellinnate\SalesCrm\Enums\StageKind;
 use Sellinnate\SalesCrm\Livewire\Concerns\InteractsWithCrm;
+use Sellinnate\SalesCrm\Models\Deal;
 use Sellinnate\SalesCrm\Models\EmailTemplate;
 use Sellinnate\SalesCrm\Models\Pipeline;
 use Sellinnate\SalesCrm\Models\Stage;
 use Sellinnate\SalesCrm\Models\WorkspaceSetting;
 use Sellinnate\SalesCrm\Services\CustomFields;
 use Sellinnate\SalesCrm\Services\DefaultPipeline;
+use Sellinnate\SalesCrm\Support\Crm;
 use Sellinnate\SalesCrm\Workspaces\Workspace;
 
 /**
@@ -366,7 +369,7 @@ class Settings extends Component
 
         app(DefaultPipeline::class)->ensureFor($this->scope(), $this->viewer());
 
-        return Pipeline::query()->inWorkspace($this->scope())->ordered()->withCount('deals')->get();
+        return Pipeline::query()->inWorkspace($this->scope())->ordered()->withCount(['deals' => $this->visibleDeals(...)])->get();
     }
 
     #[Computed]
@@ -374,7 +377,7 @@ class Settings extends Component
     {
         $pipeline = ($this->pipeline !== '' ? $this->pipelines->firstWhere('id', (int) $this->pipeline) : null) ?? $this->pipelines->first();
 
-        return $pipeline?->load(['stages' => fn ($query) => $query->withCount('deals')]);
+        return $pipeline?->load(['stages' => fn ($query) => $query->withCount(['deals' => $this->visibleDeals(...)])]);
     }
 
     /**
@@ -411,5 +414,15 @@ class Settings extends Component
     public function workspaces(): array
     {
         return $this->workspaceOptions();
+    }
+
+    /**
+     * The counters of pipelines and stages count only the deals the user sees (deal_visibility "owner").
+     *
+     * @param  Builder<Deal>  $deals
+     */
+    private function visibleDeals(Builder $deals): void
+    {
+        $deals->whereIn(Crm::table('deals').'.id', Deal::query()->visibleTo($this->viewer())->select(Crm::table('deals').'.id'));
     }
 }

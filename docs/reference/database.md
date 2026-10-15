@@ -235,7 +235,7 @@ Indexes: `assigned_to, done_at, due_at`; `deal_id, done_at, due_at`;
 | `deal_id` | cascade on delete |
 | `person_id` | set null on delete |
 | `direction` | `out` or `in` |
-| `status` | `queued`, `sent`, `failed`, `received` |
+| `status` | `queued`, `sending`, `sent`, `failed`, `received` |
 | `from_email`, `from_name`, `reply_to` | |
 | `to`, `cc` | JSON lists |
 | `subject`, `body_text` | plain text |

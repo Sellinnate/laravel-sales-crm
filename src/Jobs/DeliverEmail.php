@@ -125,11 +125,12 @@ class DeliverEmail implements ShouldQueue
 
         $email = Email::query()->find($this->emailId);
 
-        if ($email === null || $email->status !== EmailStatus::Queued) {
+        if ($email === null || ! in_array($email->status, [EmailStatus::Queued, EmailStatus::Sending], true)) {
             return;
         }
 
-        $this->markFailed($email, (string) __('sales-crm::ui.email_failed'));
+        // Still "sending" (the last attempt timed out or its worker died): whether it left is unknown.
+        $this->markFailed($email, (string) __($email->status === EmailStatus::Sending ? 'sales-crm::ui.email_unknown' : 'sales-crm::ui.email_failed'));
     }
 
     private function markFailed(Email $email, string $reason): void

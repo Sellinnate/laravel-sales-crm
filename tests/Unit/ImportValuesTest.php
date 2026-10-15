@@ -22,6 +22,7 @@ it('reads amounts only when they are readable', function (string $text, ?int $ce
     ['12,5', 1250],
     ['about 1500', null],
     ['1500 or 2000', null],
+    ['123456789012345678', null],
     ['', null],
 ]);
 

@@ -8,6 +8,7 @@ use DirectoryTree\ImapEngine\FolderInterface;
 use DirectoryTree\ImapEngine\MailboxInterface;
 use DirectoryTree\ImapEngine\MessageInterface;
 use Illuminate\Contracts\Cache\Repository as Cache;
+use RuntimeException;
 use Sellinnate\SalesCrm\Contracts\InboundDriver;
 use Sellinnate\SalesCrm\Data\InboundEmail;
 use Throwable;
@@ -37,6 +38,9 @@ class ImapDriver implements InboundDriver
             $folder = $this->mailbox->folders()->find($path);
 
             if ($folder === null) {
+                // A folder of the config that isn't there (a wrong name, renamed): said, then skipped.
+                report(new RuntimeException('sales-crm: IMAP folder not found: '.$path));
+
                 continue;
             }
 
@@ -81,7 +85,9 @@ class ImapDriver implements InboundDriver
     {
         try {
             $value = $folder->status()['UIDVALIDITY'] ?? null;
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            report($exception);
+
             return null;
         }
 

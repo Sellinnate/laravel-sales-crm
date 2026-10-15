@@ -6,19 +6,23 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
+use Sellinnate\SalesCrm\Actions\BulkUpdateDeals;
 use Sellinnate\SalesCrm\Actions\ManageActivities;
 use Sellinnate\SalesCrm\Actions\MoveDeal;
 use Sellinnate\SalesCrm\Actions\UpdateDeal;
 use Sellinnate\SalesCrm\Authorization\Access;
 use Sellinnate\SalesCrm\Data\InboundEmail;
 use Sellinnate\SalesCrm\Enums\ImportStatus;
+use Sellinnate\SalesCrm\Enums\Priority;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Livewire\Agenda;
 use Sellinnate\SalesCrm\Livewire\Companies;
 use Sellinnate\SalesCrm\Livewire\CompanyPage;
 use Sellinnate\SalesCrm\Livewire\DealPanel;
+use Sellinnate\SalesCrm\Livewire\DealsBoard;
 use Sellinnate\SalesCrm\Livewire\Import as ImportPage;
 use Sellinnate\SalesCrm\Livewire\People;
+use Sellinnate\SalesCrm\Livewire\Reports as ReportsPage;
 use Sellinnate\SalesCrm\Livewire\Settings;
 use Sellinnate\SalesCrm\Models\Activity;
 use Sellinnate\SalesCrm\Models\Company;
@@ -29,6 +33,7 @@ use Sellinnate\SalesCrm\Models\Import;
 use Sellinnate\SalesCrm\Models\Note;
 use Sellinnate\SalesCrm\Models\Person;
 use Sellinnate\SalesCrm\Models\Pipeline;
+use Sellinnate\SalesCrm\Notifications\MentionedNotification;
 use Sellinnate\SalesCrm\Services\DealFields;
 use Sellinnate\SalesCrm\Workspaces\Workspace;
 
@@ -296,4 +301,47 @@ it('never shows the settings of the shared CRM for a workspace key the user does
         ->set('workspace', 'Workbench\App\Models\Team|999')
         ->assertSet('workspace', Workspace::of($this->alpha)?->key())
         ->assertDontSee('Shared secret template');
+});
+
+it('refuses the page and the bulk actions of deals the user does not see', function () {
+    $this->alice->forceFill(['is_admin' => true])->save();
+    $alice = $this->alice->fresh();
+
+    $this->actingAs($alice)->get(route('sales-crm.deals.show', $this->betaDeal))->assertForbidden();
+
+    $result = app(BulkUpdateDeals::class)->handle([$this->betaDeal->id, $this->alphaDeal->id], 'delete', null, $alice);
+    expect($result['done'] ?? null)->toBe(1)
+        ->and(Deal::query()->whereKey($this->betaDeal->id)->exists())->toBeTrue()
+        ->and(Deal::query()->whereKey($this->alphaDeal->id)->exists())->toBeFalse();
+
+    $other = SalesCrm::for($this->alpha)->createDeal(['title' => 'Alpha two'], $alice);
+    Livewire::actingAs($alice)->test(DealsBoard::class)
+        ->set('view', 'list')
+        ->set('selected', [$this->betaDeal->id, $other->id])
+        ->set('bulkAction', 'priority')
+        ->set('bulkValue', 'p1')
+        ->call('applyBulk');
+
+    expect($this->betaDeal->fresh()->priority)->not->toBe(Priority::P1)
+        ->and($other->fresh()->priority)->toBe(Priority::P1);
+
+    config(['sales-crm.authorization.deal_visibility' => 'owner']);
+    app()->forgetScopedInstances();
+    $this->actingAs($this->both->fresh())->get(route('sales-crm.deals.show', $other))->assertForbidden();
+});
+
+it('counts in the settings only the deals the user sees and resets the owner of the reports with the workspace', function () {
+    config(['sales-crm.authorization.deal_visibility' => 'owner']);
+    app()->forgetScopedInstances();
+    SalesCrm::for($this->alpha)->createDeal(['title' => 'Both own', 'owner_id' => $this->both->id], $this->both);
+
+    $settings = Livewire::actingAs($this->alice->fresh())->test(Settings::class);
+    expect($settings->instance()->pipelines->first()?->deals_count)->toBe(1);
+
+    Livewire::actingAs($this->alice->fresh())->test(ReportsPage::class)
+        ->set('owner', (string) $this->alice->id)
+        ->set('workspace', Workspace::of($this->alpha)?->key())
+        ->assertSet('owner', '');
+
+    expect((new MentionedNotification(Note::query()->firstOrNew()))->deleteWhenMissingModels)->toBeTrue();
 });

@@ -272,6 +272,6 @@ All in `Sellinnate\SalesCrm\Enums`, string-backed, with `label()` (translated),
 | `CommissionType` | `amount`, `percent` |
 | `DocumentKind` | `quote`, `contract`, `signature_evidence`, `payment_evidence`, `other` |
 | `EmailDirection` | `out`, `in` |
-| `EmailStatus` | `queued`, `sent`, `failed`, `received` |
+| `EmailStatus` | `queued`, `sending`, `sent`, `failed`, `received` |
 | `ImportStatus` | `uploaded`, `mapped`, `running`, `done`, `failed` |
 | `DealEventType` | `created`, `stage_changed`, `updated`, `won`, `lost`, `reopened` |

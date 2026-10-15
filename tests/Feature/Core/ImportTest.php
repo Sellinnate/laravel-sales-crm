@@ -17,6 +17,7 @@ use Sellinnate\SalesCrm\Models\Note;
 use Sellinnate\SalesCrm\Services\Import\Importer;
 use Sellinnate\SalesCrm\Services\Import\ImportFields;
 use Sellinnate\SalesCrm\Services\Import\SpreadsheetReader;
+use Workbench\App\Models\User;
 
 beforeEach(function () {
     Storage::fake('local');
@@ -230,4 +231,19 @@ it('reads back the cells the export protected from formulas, in CSV and XLSX', f
     foreach (['imports/back.csv', 'imports/back.xlsx'] as $file) {
         expect(iterator_to_array((new SpreadsheetReader('local', $file))->rows())[2])->toBe(['=Portal', '@customer']);
     }
+});
+
+it('leaves the owner unset, with a warning, when two users share the name of the row', function () {
+    crmUser(['name' => 'Mario Rossi', 'email' => 'mario.one@vendor.example']);
+    crmUser(['name' => 'Mario Rossi', 'email' => 'mario.two@vendor.example']);
+    $file = csvFile('owners.csv', [['Title', 'Owner'], ['Ambiguous', 'Mario Rossi'], ['By email', 'mario.two@vendor.example']]);
+
+    $import = $this->imports->upload(null, $this->pipeline, $file, $this->admin);
+    $this->imports->map($import, ['columns' => [0 => 'title', 1 => 'owner']], $this->admin);
+    $preview = app(Importer::class)->outcomes($import->fresh());
+    $this->imports->run($import->fresh(), $this->admin);
+
+    expect(Deal::query()->where('title', 'Ambiguous')->first()?->owner_id)->not->toBeIn(User::query()->where('name', 'Mario Rossi')->pluck('id')->all())
+        ->and(Deal::query()->where('title', 'By email')->first()?->owner?->email)->toBe('mario.two@vendor.example')
+        ->and(collect($preview[0]['warnings'] ?? [])->implode(' '))->not->toBe('');
 });

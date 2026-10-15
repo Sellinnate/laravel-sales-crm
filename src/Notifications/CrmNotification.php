@@ -17,6 +17,12 @@ abstract class CrmNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    /**
+     * The activity, note or deal deleted before the worker took the notification: dropped, not a
+     * failed job (Laravel 12+; Laravel 11 ignores it).
+     */
+    public bool $deleteWhenMissingModels = true;
+
     public function __construct()
     {
         $queue = config('sales-crm.notifications.queue');

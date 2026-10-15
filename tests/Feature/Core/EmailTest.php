@@ -419,3 +419,16 @@ it('reads the IMAP folder from the last days again when its UIDVALIDITY changes'
     iterator_to_array((new ImapDriver($mailbox, $cache, ['INBOX'], [], 10))->fetch(), false);
     expect($calls)->toContain('uid')->not->toContain('since');
 });
+
+it('refuses a webhook body that is not a JSON object, and items that are not emails', function () {
+    config(['sales-crm.email.inbound.webhook_secret' => 'top-secret']);
+    $post = fn (string $body) => $this->call('POST', '/sales-crm/inbound', [], [], [], ['CONTENT_TYPE' => 'application/json', 'HTTP_X_SALES_CRM_SIGNATURE' => hash_hmac('sha256', $body, 'top-secret')], $body);
+
+    $post('{"emails": [{"message_id": "cut@acme.example"')->assertStatus(400);
+    $post('message_id=form@acme.example')->assertStatus(400);
+    $post('["not", "an", "object"]')->assertStatus(400);
+    $post(json_encode(['emails' => [['message_id' => 'ok-1@acme.example', 'from' => 'jane@acme.example', 'subject' => 'Hi', 'text' => 'Hi'], 'oops']]))
+        ->assertStatus(422)->assertJson(['invalid' => [1]]);
+
+    expect(Email::query()->where('message_id', 'ok-1@acme.example')->exists())->toBeFalse();
+});
