@@ -1,5 +1,6 @@
 <?php
 
+use Sellinnate\SalesCrm\Actions\SaveWorkspaceSettings;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Workspaces\Workspace;
 
@@ -32,4 +33,17 @@ it('exports XLSX when openspout is installed', function () {
 
     $response->assertOk()->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     expect(substr($response->streamedContent(), 0, 2))->toBe('PK');
+});
+
+it('exports the custom fields of the workspace of the pipeline when no workspace is chosen', function () {
+    useTeams();
+    $alice = crmUser(['is_admin' => true]);
+    $alpha = crmTeam('Alpha', $alice);
+    app(SaveWorkspaceSettings::class)->customFields($alpha, [['key' => 'seats', 'label' => 'Seats', 'type' => 'number']], $alice);
+    $deal = SalesCrm::for($alpha)->createDeal(['title' => 'Licences', 'custom_values' => ['seats' => '12']], $alice);
+
+    $content = $this->actingAs($alice)->get(route('sales-crm.deals.export', ['pipeline' => $deal->pipeline_id]))->assertOk()->streamedContent();
+
+    expect(strtok($content, "\n"))->toContain('Seats')
+        ->and($content)->toContain('Licences');
 });

@@ -62,7 +62,8 @@ class ExportDealsController extends Controller
             'closed' => $validated['closed'] ?? 'recent',
         ], fn (mixed $value): bool => filled($value));
 
-        $scope = $workspace === false ? null : $workspace;
+        // The custom fields of the pipeline's workspace when the board was exported without choosing one.
+        $scope = $pipeline?->workspaceRef() ?? ($workspace === false ? null : $workspace);
         $columns = DealColumns::all($scope);
         $custom = collect(CustomFields::of($scope))->keyBy('key')->all();
         $query = $board->query($user, $filters, $pipeline, $workspace)->with([...DealBoard::cardRelations(), 'stage']);
