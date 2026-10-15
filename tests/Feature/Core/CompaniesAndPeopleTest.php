@@ -64,6 +64,19 @@ it('completes a matched company with the details it lacks, never overwriting the
     expect($same->id)->toBe($acme->id)->and($same->city)->toBe('Milan')->and($same->industry)->toBe('Software');
 });
 
+it('announces the companies and people it creates while matching, not the matched ones', function () {
+    Event::fake([CompanyCreated::class, PersonCreated::class]);
+
+    $acme = SalesCrm::shared()->company(['name' => 'Acme'], $this->seller);
+    SalesCrm::shared()->company(['name' => 'ACME']);
+    SalesCrm::shared()->person(['first_name' => 'Jane', 'email' => 'jane@acme.example'], $acme, $this->seller);
+    SalesCrm::shared()->person(['email' => 'JANE@acme.example'], $acme);
+
+    Event::assertDispatchedTimes(CompanyCreated::class, 1);
+    Event::assertDispatchedTimes(PersonCreated::class, 1);
+    Event::assertDispatched(CompanyCreated::class, fn (CompanyCreated $event): bool => $event->company->is($acme) && $event->by?->getAuthIdentifier() === $this->seller->getAuthIdentifier());
+});
+
 it('deletes a company only without deals, and only for managers', function () {
     $deal = SalesCrm::shared()->createDeal(['title' => 'X', 'company_name' => 'Busy Ltd'], $this->seller);
     $busy = $deal->company;

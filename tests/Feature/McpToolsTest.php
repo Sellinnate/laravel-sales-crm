@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Gate;
+use Laravel\Mcp\Server\Testing\PendingTestResponse;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Mcp\SalesCrmServer;
 use Sellinnate\SalesCrm\Mcp\Tools\CrmActivitiesDueTool;
@@ -21,15 +22,27 @@ beforeEach(function () {
 });
 
 it('lists the tools of the server', function () {
-    SalesCrmServer::actingAs($this->seller)->tools()->assertRegistered([
+    $tools = [
         CrmPipelinesTool::class, CrmDealsListTool::class, CrmDealGetTool::class, CrmDealCreateTool::class, CrmDealUpdateTool::class,
         CrmDealMoveTool::class, CrmNoteAddTool::class, CrmActivityAddTool::class, CrmActivitiesDueTool::class,
-    ]);
+    ];
+
+    // The tools() assertion only exists since laravel/mcp 1.0.
+    if (method_exists(PendingTestResponse::class, 'tools')) {
+        SalesCrmServer::actingAs($this->seller)->tools()->assertRegistered($tools);
+    }
+
+    expect((new ReflectionClass(SalesCrmServer::class))->getProperty('tools')->getDefaultValue())->toBe($tools)
+        ->and(array_map(fn (string $tool): string => app($tool)->name(), $tools))->each->toStartWith('crm_');
 });
 
 it('reads pipelines, deals and the details of a deal', function () {
     SalesCrmServer::actingAs($this->seller)->tool(CrmPipelinesTool::class)->assertOk()->assertSee(['Sales pipeline', 'Proposal sent', '"deals":1']);
     SalesCrmServer::actingAs($this->seller)->tool(CrmDealsListTool::class, ['search' => 'acme'])->assertOk()->assertSee(['Website redesign', '"count":1']);
+    $this->deal->forceFill(['source' => 'referral', 'tags' => ['vip']])->save();
+    SalesCrmServer::actingAs($this->seller)->tool(CrmDealsListTool::class, ['source' => 'referral', 'tag' => 'vip'])->assertOk()->assertSee('"count":1');
+    SalesCrmServer::actingAs($this->seller)->tool(CrmDealsListTool::class, ['source' => 'event'])->assertOk()->assertSee('"count":0');
+    SalesCrmServer::actingAs($this->seller)->tool(CrmDealsListTool::class, ['tag' => 'other'])->assertOk()->assertSee('"count":0');
     SalesCrmServer::actingAs($this->seller)->tool(CrmDealGetTool::class, ['deal_id' => $this->deal->id])->assertOk()->assertSee(['Website redesign', 'timeline', 'Deal created']);
 });
 

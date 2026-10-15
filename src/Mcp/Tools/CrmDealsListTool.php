@@ -8,6 +8,7 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use Sellinnate\SalesCrm\Authorization\Access;
+use Sellinnate\SalesCrm\Enums\DealSource;
 use Sellinnate\SalesCrm\Models\Deal;
 use Sellinnate\SalesCrm\Models\Pipeline;
 use Sellinnate\SalesCrm\Services\DealBoard;
@@ -27,6 +28,8 @@ class CrmDealsListTool extends CrmTool
             'quick' => $schema->array()->items($schema->string()->enum(DealBoard::QUICK_FILTERS))->description('Quick filters, combined.'),
             'owner_id' => $schema->string()->description('Owner user id, or "none".'),
             'priority' => $schema->string()->enum(['p1', 'p2', 'p3', 'p4', 'excluded']),
+            'source' => $schema->string()->enum(array_map(fn (DealSource $source): string => $source->value, DealSource::cases())),
+            'tag' => $schema->string()->description('A tag of the deal.'),
             'pipeline_id' => $schema->integer(),
             'stage_id' => $schema->integer(),
             'include_closed' => $schema->boolean()->description('Also won and lost deals older than the board shows.'),
@@ -42,6 +45,8 @@ class CrmDealsListTool extends CrmTool
             'quick.*' => ['string'],
             'owner_id' => ['nullable'],
             'priority' => ['nullable', 'string'],
+            'source' => ['nullable', 'string'],
+            'tag' => ['nullable', 'string', 'max:40'],
             'pipeline_id' => ['nullable', 'integer'],
             'stage_id' => ['nullable', 'integer'],
             'include_closed' => ['nullable', 'boolean'],
@@ -54,6 +59,8 @@ class CrmDealsListTool extends CrmTool
             'quick' => array_values(array_map('strval', $validated['quick'] ?? [])),
             'owner' => isset($validated['owner_id']) && is_scalar($validated['owner_id']) ? (string) $validated['owner_id'] : null,
             'priority' => $validated['priority'] ?? null,
+            'source' => $validated['source'] ?? null,
+            'tag' => $validated['tag'] ?? null,
             'stage' => $validated['stage_id'] ?? null,
             'closed' => ($validated['include_closed'] ?? false) ? 'all' : 'recent',
         ], $pipeline)

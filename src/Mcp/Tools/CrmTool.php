@@ -56,6 +56,7 @@ abstract class CrmTool extends Tool
      */
     protected function json(array $data): Response
     {
-        return Response::json($data);
+        // Compact and the same on every version of laravel/mcp (0.x pretty-prints Response::json()).
+        return Response::text(json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 }

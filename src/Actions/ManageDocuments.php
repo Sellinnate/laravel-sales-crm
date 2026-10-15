@@ -35,7 +35,7 @@ class ManageDocuments
     public function __construct(private UpdateDeal $updateDeal, private DealActivityState $state, private DealFields $fields) {}
 
     /**
-     * @param  array{kind?: string|null, document_date?: string|null, valid_until?: string|null}  $data
+     * @param  array{kind: string, document_date?: string|null, valid_until?: string|null}  $data
      *
      * @throws AuthorizationException
      * @throws ValidationException

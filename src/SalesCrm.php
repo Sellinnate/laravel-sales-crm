@@ -120,7 +120,7 @@ class SalesCrm
     }
 
     /**
-     * @param  array{kind?: string|null, document_date?: string|null, valid_until?: string|null}  $data
+     * @param  array{kind: string, document_date?: string|null, valid_until?: string|null}  $data
      */
     public function uploadDocument(Deal|Company $target, UploadedFile $file, array $data, Authenticatable $by): Document
     {

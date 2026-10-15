@@ -5,6 +5,8 @@ namespace Sellinnate\SalesCrm\Services;
 use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Str;
+use Sellinnate\SalesCrm\Events\CompanyCreated;
+use Sellinnate\SalesCrm\Events\PersonCreated;
 use Sellinnate\SalesCrm\Models\Company;
 use Sellinnate\SalesCrm\Models\Person;
 use Sellinnate\SalesCrm\Support\Crm;
@@ -185,6 +187,7 @@ class Matcher
             if ($company === null) {
                 $company = new Company([...$attributes, 'created_by' => Crm::userKey($by)]);
                 $company->setWorkspace($workspace)->save();
+                CompanyCreated::dispatch($company, $by);
 
                 return $company;
             }
@@ -218,6 +221,7 @@ class Matcher
             if ($person === null) {
                 $person = new Person([...$attributes, 'created_by' => Crm::userKey($by)]);
                 $person->setWorkspace($workspace)->save();
+                PersonCreated::dispatch($person, $by);
 
                 return $person;
             }

@@ -27,7 +27,9 @@ return [
     | The Eloquent model of the people who work the CRM: deal owners, activity
     | assignees, approvers and the authors of notes. It defaults to the model of
     | the default auth provider. `name_attribute` and `email_attribute` are read
-    | to show users and to mention them in notes (@Jane Doe).
+    | to show users and to mention them in notes (@Jane Doe). `scope` is an
+    | optional local scope of the user model (e.g. 'salesTeam' for
+    | scopeSalesTeam()) that limits who can be picked as owner or assignee.
     |
     */
 
@@ -36,6 +38,7 @@ return [
     'users' => [
         'name_attribute' => 'name',
         'email_attribute' => 'email',
+        'scope' => null,
     ],
 
     /*
@@ -109,8 +112,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | The prefix of every CRM table (crm_deals, crm_pipelines…). Key types must
-    | match your users and workspace tables: int, uuid or ulid. Set them before
-    | running the migrations.
+    | match your users and workspace tables: int, uuid or ulid (the workspace
+    | key also accepts string). Set them before running the migrations.
     |
     */
 
