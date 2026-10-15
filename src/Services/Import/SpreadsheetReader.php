@@ -263,6 +263,8 @@ class SpreadsheetReader
 
     private static function delimiter(string $line): string
     {
+        // Only the separators outside the quoted fields: "Company, legal name";Title is semicolon-separated.
+        $line = (string) preg_replace('/"(?:[^"]|"")*"/', '', $line);
         $counts = ['semicolon' => substr_count($line, ';'), 'comma' => substr_count($line, ','), 'tab' => substr_count($line, "\t")];
         arsort($counts);
 

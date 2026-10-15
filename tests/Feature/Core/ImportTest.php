@@ -173,3 +173,13 @@ it('numbers the XLSX rows as the sheet does, across empty rows', function () {
     expect(array_keys($rows))->toBe([1, 4])
         ->and($rows[4])->toBe(['Mobile app', 'Orbital Robotics']);
 });
+
+it('reads the delimiter outside the quoted fields of the header', function () {
+    Storage::fake('local');
+    Storage::disk('local')->put('imports/quoted.csv', "\"Company, legal name\";\"Title, short\";Value\n\"Acme, Inc.\";Website;1200\n");
+
+    $rows = iterator_to_array((new SpreadsheetReader('local', 'imports/quoted.csv'))->rows());
+
+    expect($rows[1])->toBe(['Company, legal name', 'Title, short', 'Value'])
+        ->and($rows[2])->toBe(['Acme, Inc.', 'Website', '1200']);
+});
