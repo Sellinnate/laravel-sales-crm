@@ -10,6 +10,7 @@ use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Sellinnate\SalesCrm\Models\Deal;
 
 /**
  * Internal helpers that read the package configuration: table names, the user model and how users
@@ -145,6 +146,18 @@ final class Crm
     /**
      * The key of a user as stored in the CRM columns.
      */
+    /**
+     * Lock the row of a deal before writing its notes, activities, emails or people: inserting a row
+     * that refers to the deal takes a shared lock on it (InnoDB), and refreshing the deal afterwards
+     * wants an exclusive one. Two writers holding the shared lock would deadlock; taken first, they queue.
+     */
+    public static function lockDeal(?int $dealId): void
+    {
+        if ($dealId !== null) {
+            Deal::query()->whereKey($dealId)->lockForUpdate()->first();
+        }
+    }
+
     /**
      * Whether a value from outside (a filter, a form, the API) can be a key of the users, by
      * `database.user_key_type`: PostgreSQL refuses to compare a bigint with "abc" instead of finding nothing.

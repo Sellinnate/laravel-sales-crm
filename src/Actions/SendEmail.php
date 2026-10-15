@@ -91,6 +91,7 @@ class SendEmail
         $body = $this->templates->render($validated['body'], $deal, $person, $by);
 
         return Crm::db()->transaction(function () use ($deal, $validated, $by, $replyTo, $person, $subject, $body, $sender): Email {
+            Crm::lockDeal($deal->id);
             $email = (new Email([
                 'deal_id' => $deal->id,
                 'person_id' => $person instanceof Person ? $person->id : null,

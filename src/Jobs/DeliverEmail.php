@@ -17,6 +17,7 @@ use Sellinnate\SalesCrm\Events\EmailSent;
 use Sellinnate\SalesCrm\Mail\DealEmail;
 use Sellinnate\SalesCrm\Models\Email;
 use Sellinnate\SalesCrm\Services\DealActivityState;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Throwable;
 
 /**
@@ -78,12 +79,14 @@ class DeliverEmail implements ShouldQueue
 
             try {
                 $sent = Mail::mailer($this->mailer)->send(new DealEmail($email));
-            } catch (Throwable $exception) {
-                // Refused by the mailer: not sent, back in the queue for the next attempt.
+            } catch (TransportExceptionInterface $exception) {
+                // Refused by the transport: not sent, back in the queue for the next attempt.
                 Email::query()->whereKey($email->id)->where('status', EmailStatus::Sending->value)->update(['status' => EmailStatus::Queued->value]);
 
                 throw $exception;
             }
+            // Any other exception (a listener of MessageSent, a client timeout after the provider took it)
+            // leaves it "sending": the next attempt closes it as unknown, never sends it again.
 
             // Vetoed by a listener of the host (MessageSending answered false): nothing left. (Mail::fake()
             // answers null to every send: the tests of the host keep their emails sent.)

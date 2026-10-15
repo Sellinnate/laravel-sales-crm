@@ -87,6 +87,8 @@ class CreateDeal
         }
 
         // The lock of the deduplication first, then the one of the board: both last until the commit.
+        // Up to 3 attempts: inserting the deal locks the row of its pipeline shared and touch() wants it
+        // exclusive, so a change of another card at the same moment may deadlock (retried, never lost).
         return $this->matcher->locked($workspace, fn (): Deal => $this->positions->locked($pipeline->id, fn (): Deal => Crm::db()->transaction(function () use ($workspace, $pipeline, $stage, $validated, $completions, $by, $requirements, $append, $origin): Deal {
             $now = CarbonImmutable::now();
             // The stage as it is now, under the lock of the board: its kind and requirements may have changed.
@@ -142,7 +144,7 @@ class CreateDeal
             DealCreated::dispatch($deal, $by);
 
             return $deal;
-        })));
+        }, 3)));
     }
 
     /**

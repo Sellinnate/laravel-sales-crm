@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -142,11 +143,11 @@ it('saves only the custom fields changed in the panel, leaving unknown yes/no fi
 
     $panel->set('form.next_step', 'Send the quote')->call('save')->assertHasNoErrors();
 
-    expect($this->deal->fresh()->custom_values)->toEqual(['seats' => 9])
+    expect(Arr::sortRecursive($this->deal->fresh()->custom_values))->toBe(Arr::sortRecursive(['seats' => 9]))
         ->and($this->deal->fresh()->next_step)->toBe('Send the quote');
 
     $panel->set('custom.renewal', true)->call('save');
-    expect($this->deal->fresh()->custom_values)->toEqual(['seats' => 9, 'renewal' => true]);
+    expect(Arr::sortRecursive($this->deal->fresh()->custom_values))->toBe(Arr::sortRecursive(['seats' => 9, 'renewal' => true]));
 });
 
 it('keeps the fields typed and not saved yet when the deal moves from the panel', function () {

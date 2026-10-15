@@ -125,6 +125,7 @@ return [
     'reminder_before' => ':time before',
     'activity_saved' => 'Activity saved.',
     'activity_gone' => 'This activity was deleted meanwhile.',
+    'record_gone' => 'It was deleted meanwhile: nothing saved.',
     'activity_done' => 'Activity done.',
     'mark_done' => 'Mark as done',
     'planned_activities' => 'Planned activities',

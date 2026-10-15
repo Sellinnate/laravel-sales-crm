@@ -40,6 +40,7 @@ class ManageNotes
         $body = $this->body($body);
 
         return Crm::db()->transaction(function () use ($target, $body, $by, $pinned, $notify): Note {
+            Crm::lockDeal($target instanceof Deal ? $target->id : null);
             $mentioned = $this->mentions->in($body, $target->workspaceRef(), $by);
 
             $note = (new Note([

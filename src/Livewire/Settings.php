@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Sellinnate\SalesCrm\Actions\SaveEmailTemplate;
@@ -55,6 +56,7 @@ class Settings extends Component
     /** @var array<string, mixed> */
     public array $pipelineForm = [];
 
+    #[Locked]
     public ?int $editingPipeline = null;
 
     public bool $showStage = false;
@@ -62,6 +64,7 @@ class Settings extends Component
     /** @var array<string, mixed> */
     public array $stageForm = [];
 
+    #[Locked]
     public ?int $editingStage = null;
 
     /** @var list<array<string, mixed>> */
@@ -72,6 +75,7 @@ class Settings extends Component
     /** @var array<string, mixed> */
     public array $templateForm = [];
 
+    #[Locked]
     public ?int $editingTemplate = null;
 
     public string $entryStage = '';
@@ -139,6 +143,12 @@ class Settings extends Component
     {
         $pipeline = $this->editingPipeline === null ? null : $this->pipelines->firstWhere('id', $this->editingPipeline);
 
+        if ($this->gone($this->editingPipeline, $pipeline)) {
+            $this->showPipeline = false;
+
+            return;
+        }
+
         try {
             $saved = app(SavePipeline::class)->handle($this->scope(), $this->pipelineForm, $this->viewer(), $pipeline);
         } catch (ValidationException $exception) {
@@ -203,6 +213,13 @@ class Settings extends Component
         }
 
         $stage = $this->editingStage === null ? null : $pipeline->stages->firstWhere('id', $this->editingStage);
+
+        if ($this->gone($this->editingStage, $stage)) {
+            $this->showStage = false;
+
+            return;
+        }
+
         $data = $this->stageForm;
 
         if (blank($data['on_enter_activity']['title'] ?? null)) {
@@ -317,6 +334,12 @@ class Settings extends Component
     {
         $template = $this->editingTemplate === null ? null : $this->templates->firstWhere('id', $this->editingTemplate);
 
+        if ($this->gone($this->editingTemplate, $template)) {
+            $this->showTemplate = false;
+
+            return;
+        }
+
         try {
             app(SaveEmailTemplate::class)->handle($this->scope(), $this->templateForm, $this->viewer(), $template);
         } catch (ValidationException $exception) {
@@ -414,6 +437,21 @@ class Settings extends Component
     public function workspaces(): array
     {
         return $this->workspaceOptions();
+    }
+
+    /**
+     * The record being edited was deleted meanwhile (another tab, a colleague): never created again.
+     */
+    private function gone(?int $editing, mixed $found): bool
+    {
+        if ($editing === null || $found !== null) {
+            return false;
+        }
+
+        unset($this->pipelines, $this->currentPipeline, $this->templates);
+        $this->notify((string) __('sales-crm::ui.record_gone'), 'danger');
+
+        return true;
     }
 
     /**

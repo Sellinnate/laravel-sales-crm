@@ -79,7 +79,8 @@ class Reports extends Component
         [$from, $to] = $this->period();
         $workspace = $this->access()->resolver()->enabled() ? ($this->workspace === '' ? false : $this->workspaceFromKey($this->workspace) ?? false) : null;
 
-        return app(ReportService::class)->build($this->viewer(), $workspace, $this->owner === '' ? null : $this->owner, $from, $to);
+        // From the URL: a value that can't be a user key is no filter (PostgreSQL would refuse it).
+        return app(ReportService::class)->build($this->viewer(), $workspace, Crm::isUserKey($this->owner) ? $this->owner : null, $from, $to);
     }
 
     /**

@@ -198,3 +198,17 @@ it('creates a deal in a stage asking for the next activity with the type the for
     expect($deal->stage_id)->toBe($qualified->id)
         ->and($deal->activities()->first()?->type->value)->toBe('call');
 });
+
+it('asks the reason of a deal created straight in the lost stage', function () {
+    $lost = crmStage($this->pipeline, 'Lost');
+
+    $form = Livewire::test(DealsBoard::class)->call('startCreate', $lost->id)
+        ->assertSee(__('sales-crm::fields.deal.lost_reason'))
+        ->set('draft.title', 'Lost at once')
+        ->call('createDeal')
+        ->assertHasErrors('draft.lost_reason');
+
+    $form->set('draft.lost_reason', 'price')->call('createDeal')->assertHasNoErrors();
+
+    expect(Deal::query()->where('title', 'Lost at once')->first()?->lost_reason?->value)->toBe('price');
+});

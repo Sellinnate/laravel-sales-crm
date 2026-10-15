@@ -88,6 +88,7 @@ class ManageActivities
         };
 
         return Crm::db()->transaction(function () use ($target, $validated, $by, $activity, $hasTime, $dueAt, $assignee): Activity {
+            Crm::lockDeal($target instanceof Deal ? $target->id : null);
             $created = $activity === null;
             $activity ??= (new Activity([...$this->targetColumns($target), 'created_by' => Crm::userKey($by)]))->setWorkspace($target->workspaceRef());
 

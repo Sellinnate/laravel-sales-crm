@@ -328,6 +328,6 @@ it('returns and announces the deal with the next activity written by its creatio
 
     expect($created->next_activity_at)->not->toBeNull()
         ->and($moved->next_activity_at)->not->toBeNull();
-    Event::assertDispatched(DealCreated::class, fn (DealCreated $event): bool => $event->deal->title !== 'Planned' || $event->deal->next_activity_at !== null);
+    Event::assertDispatched(DealCreated::class, fn (DealCreated $event): bool => $event->deal->title === 'Planned' && $event->deal->next_activity_at !== null);
     Event::assertDispatched(DealStageChanged::class, fn (DealStageChanged $event): bool => $event->deal->next_activity_at !== null);
 });

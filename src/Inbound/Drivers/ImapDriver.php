@@ -12,6 +12,7 @@ use RuntimeException;
 use Sellinnate\SalesCrm\Contracts\InboundDriver;
 use Sellinnate\SalesCrm\Data\InboundEmail;
 use Throwable;
+use ZBateson\MailMimeParser\Header\IdHeader;
 
 /**
  * Reads a mailbox over IMAP with directorytree/imapengine: the new messages of the configured
@@ -94,6 +95,28 @@ class ImapDriver implements InboundDriver
         return is_scalar($value) && (string) $value !== '' ? (string) $value : null;
     }
 
+    /**
+     * Every Message-ID of References: the header is an IdHeader whose getValue() is the first one only.
+     *
+     * @return list<string>
+     */
+    private static function references(MessageInterface $message): array
+    {
+        try {
+            $header = $message->header('References');
+        } catch (Throwable) {
+            return [];
+        }
+
+        if ($header instanceof IdHeader) {
+            return array_values(array_filter($header->getIds(), fn (string $id): bool => $id !== ''));
+        }
+
+        $value = $header?->getRawValue();
+
+        return is_string($value) ? array_values(array_filter(preg_split('/\s+/', $value) ?: [])) : [];
+    }
+
     public static function toInbound(MessageInterface $message): InboundEmail
     {
         $address = fn (?Address $address): ?string => $address === null || $address->email() === '' ? null : strtolower($address->email());
@@ -118,7 +141,7 @@ class ImapDriver implements InboundDriver
             text: $message->text(),
             html: $message->html(),
             inReplyTo: $message->inReplyTo()[0] ?? null,
-            references: array_values(array_filter(preg_split('/\s+/', (string) $header('References')) ?: [])),
+            references: self::references($message),
             date: $date === null ? null : CarbonImmutable::instance($date),
             replyTo: $address($message->replyTo()),
             headers: array_filter([

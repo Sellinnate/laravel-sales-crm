@@ -122,6 +122,7 @@ return [
     'reminder_before' => ':time prima',
     'activity_saved' => 'Attività salvata.',
     'activity_gone' => 'Questa attività è stata eliminata nel frattempo.',
+    'record_gone' => 'È stato eliminato nel frattempo: nulla è stato salvato.',
     'activity_done' => 'Attività completata.',
     'mark_done' => 'Segna come fatta',
     'planned_activities' => 'Attività pianificate',

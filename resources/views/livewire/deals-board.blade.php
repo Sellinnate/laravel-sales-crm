@@ -308,18 +308,17 @@
                         @endforeach
                     </select>
                 </x-sales-crm::field>
-                @if ($this->draftRequirements !== [])
+                @if ($this->draftRequirements !== [] || $this->draftNeedsReason)
                     <div class="flex flex-col gap-2 border-t border-line pt-3 sm:col-span-2" data-test="crm-draft-requirements">
                         <span class="text-xs text-muted">{{ __('sales-crm::ui.required_by_stage') }}</span>
                         @include('sales-crm::livewire.partials.requirement-fields', [
                             'fields' => array_values(array_filter($this->draftRequirements, fn ($field) => ! in_array($field->value, ['company', 'person', 'owner', 'amount', 'expected_close_date'], true))),
-                            'lostReason' => false,
+                            'lostReason' => $this->draftNeedsReason,
                             'model' => 'draft',
                             'owners' => $this->owners,
                         ])
                     </div>
                 @endif
-                @error('draft.lost_reason') <p class="crm-error sm:col-span-2">{{ $message }}</p> @enderror
                 @foreach ($errors->getMessages() as $key => $messages)
                     @if (str_starts_with($key, 'draft.requirements.'))
                         <p class="crm-error sm:col-span-2" data-test="crm-draft-requirement-error">{{ $messages[0] }}</p>

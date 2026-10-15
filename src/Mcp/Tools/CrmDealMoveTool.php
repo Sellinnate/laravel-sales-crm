@@ -47,7 +47,11 @@ class CrmDealMoveTool extends CrmTool
         }
 
         /** @var array<string, mixed> $fill */
-        $fill = array_filter([...(array) ($validated['fill'] ?? []), 'lost_reason' => $validated['lost_reason'] ?? null, 'lost_note' => $validated['lost_note'] ?? null], fn (mixed $value): bool => $value !== null);
+        // The reason may come at the top level or inside fill: the top level wins only when given.
+        $fill = [
+            ...(array) ($validated['fill'] ?? []),
+            ...array_filter(['lost_reason' => $validated['lost_reason'] ?? null, 'lost_note' => $validated['lost_note'] ?? null], fn (mixed $value): bool => $value !== null),
+        ];
         $deal = app(MoveDeal::class)->handle($deal, $stage, $user, $fill);
 
         return $this->json(['message' => 'Deal moved to «'.$stage->name.'».', 'deal' => $this->summary($deal->fresh() ?? $deal, $access)]);

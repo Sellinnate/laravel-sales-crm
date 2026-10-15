@@ -35,3 +35,12 @@ it('builds the dashboard of the deals the user sees', function () {
     $mine = SalesCrm::reports()->build($admin, null, $admin->id, CarbonImmutable::now()->subMonth(), CarbonImmutable::now());
     expect($mine['open_total']['value'])->toBe(300000);
 });
+
+it('ignores an owner filter that cannot be a user key', function () {
+    $admin = crmUser(['is_admin' => true]);
+    SalesCrm::shared()->createDeal(['title' => 'Counted', 'amount_once' => 1000], $admin);
+    $period = [CarbonImmutable::now()->subMonth(), CarbonImmutable::now()];
+
+    expect(SalesCrm::reports()->build($admin, null, 'abc', ...$period)['open_total'])->toBe(SalesCrm::reports()->build($admin, null, null, ...$period)['open_total'])
+        ->and(SalesCrm::reports()->build($admin, null, '5abc', ...$period)['open_total']['count'])->toBe(1);
+});

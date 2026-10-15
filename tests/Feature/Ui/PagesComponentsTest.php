@@ -5,6 +5,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use Sellinnate\SalesCrm\Actions\SavePipeline;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Livewire\Agenda;
 use Sellinnate\SalesCrm\Livewire\Companies;
@@ -19,6 +20,7 @@ use Sellinnate\SalesCrm\Models\Activity;
 use Sellinnate\SalesCrm\Models\Company;
 use Sellinnate\SalesCrm\Models\Deal;
 use Sellinnate\SalesCrm\Models\Import as ImportModel;
+use Sellinnate\SalesCrm\Models\Pipeline;
 use Sellinnate\SalesCrm\Models\Stage;
 use Sellinnate\SalesCrm\Services\CustomFields;
 
@@ -205,4 +207,15 @@ it('shows the settings read-only to users who do not manage the CRM', function (
     $this->actingAs($this->seller);
 
     Livewire::test(Settings::class)->assertSee(__('sales-crm::ui.settings.readonly'))->assertDontSee('data-test="stage-new"', false);
+});
+
+it('never creates again a pipeline deleted while its form was open', function () {
+    $this->actingAs($this->admin);
+    $extra = app(SavePipeline::class)->handle(null, ['name' => 'Partners'], $this->admin);
+
+    $settings = Livewire::test(Settings::class)->call('editPipeline', $extra->id)->set('pipelineForm.name', 'Partners renamed');
+    app(SavePipeline::class)->delete($extra, $this->admin);
+    $settings->call('savePipeline');
+
+    expect(Pipeline::query()->where('name', 'like', 'Partners%')->exists())->toBeFalse();
 });

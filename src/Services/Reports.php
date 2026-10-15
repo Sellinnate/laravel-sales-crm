@@ -56,6 +56,7 @@ class Reports
      */
     public function build(Authenticatable $viewer, Workspace|false|null $workspace, int|string|null $ownerId, CarbonImmutable $from, CarbonImmutable $to): array
     {
+        $ownerId = Crm::isUserKey($ownerId) ? $ownerId : null;
         $from = $from->startOfDay();
         $to = $to->endOfDay();
         $table = Crm::table('deals');

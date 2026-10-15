@@ -170,6 +170,9 @@ it('polls the inbound driver and maps IMAP messages', function () {
         'From: Jane Doe <jane@acme.example>',
         'To: crm@example.test',
         'Subject: From IMAP',
+        'In-Reply-To: <third@vendor.example>',
+        'References: <root@client.example> <second@vendor.example>',
+        '  <third@vendor.example>',
         'Date: '.now()->subMinutes(5)->toRfc2822String(),
         'Content-Type: text/plain; charset=utf-8',
         '',
@@ -181,6 +184,7 @@ it('polls the inbound driver and maps IMAP messages', function () {
     expect($inbound->messageId)->toBe('imap-1@acme.example')
         ->and($inbound->fromEmail)->toBe('jane@acme.example')
         ->and($inbound->subject)->toBe('From IMAP')
+        ->and($inbound->references)->toBe(['root@client.example', 'second@vendor.example', 'third@vendor.example'])
         ->and(trim((string) $inbound->text))->toBe('Hello from the mailbox');
 
     SalesCrm::inbound()->drivers()->extend('memory', fn () => new class([$inbound]) implements InboundDriver

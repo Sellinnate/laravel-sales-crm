@@ -135,7 +135,14 @@ Every inbound email is checked in this order:
    Bcc from their own mail client.
 5. **Everything else is ignored**: personal mail, newsletters, and senders that
    match a person in **more than one workspace** (it would be impossible to
-   tell whose matter it is).
+   tell whose matter it is). The last case is written to your log
+   (`sales-crm: inbound email kept by no workspace…`, with the Message-ID).
+   Mind that in a multi-tenant app any workspace that adds a person with the
+   address of another tenant's customer makes that customer's emails ambiguous
+   for both (replies in a known thread are not affected). If your tenants must
+   not influence each other, route the inbound emails per workspace: one
+   inbound address or mailbox per workspace, received with
+   `SalesCrm::inbound()->receive($email, $workspace)`.
 
 Each email is stored **once per workspace and Message-ID**, so reading the same
 message twice is harmless. A stored email fires `EmailReceived` and refreshes

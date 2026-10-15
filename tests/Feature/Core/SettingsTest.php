@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Sellinnate\SalesCrm\Actions\SaveEmailTemplate;
 use Sellinnate\SalesCrm\Actions\SaveWorkspaceSettings;
@@ -27,14 +28,14 @@ it('defines custom fields whose values live on the deals', function () {
         ->and(DealColumns::all(null))->toHaveKey('custom:plan', 'Plan');
 
     $deal = SalesCrm::shared()->createDeal(['title' => 'Custom', 'custom_values' => ['seats' => '12', 'plan' => 'Pro', 'renewal' => '1']], $this->seller);
-    // toEqual: MySQL keeps the keys of a JSON object in its own order.
-    expect($deal->custom_values)->toEqual(['seats' => 12, 'plan' => 'Pro', 'renewal' => true])
+    // Keys sorted: MySQL keeps the keys of a JSON object in its own order. Values compared strictly.
+    expect(Arr::sortRecursive($deal->custom_values))->toBe(Arr::sortRecursive(['seats' => 12, 'plan' => 'Pro', 'renewal' => true]))
         ->and(DealColumns::text($deal, 'custom:renewal', collect(CustomFields::of(null))->keyBy('key')->all()))->toBe('Yes');
 
     expect(fn () => SalesCrm::updateDeal($deal, ['custom_values' => ['plan' => 'Enterprise']], $this->seller))->toThrow(ValidationException::class);
 
     $deal = SalesCrm::updateDeal($deal, ['custom_values' => ['seats' => '']], $this->seller);
-    expect($deal->custom_values)->toEqual(['plan' => 'Pro', 'renewal' => true]);
+    expect(Arr::sortRecursive($deal->custom_values))->toBe(Arr::sortRecursive(['plan' => 'Pro', 'renewal' => true]));
 });
 
 it('validates the definitions of custom fields', function () {

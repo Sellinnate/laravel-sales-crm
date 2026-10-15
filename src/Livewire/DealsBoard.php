@@ -24,6 +24,7 @@ use Sellinnate\SalesCrm\Actions\UpdateDeal;
 use Sellinnate\SalesCrm\Contracts\WorkspaceResolver;
 use Sellinnate\SalesCrm\Enums\ActivityType;
 use Sellinnate\SalesCrm\Enums\RequiredField;
+use Sellinnate\SalesCrm\Enums\StageKind;
 use Sellinnate\SalesCrm\Exceptions\MissingRequirements;
 use Sellinnate\SalesCrm\Livewire\Concerns\InteractsWithCrm;
 use Sellinnate\SalesCrm\Models\Company;
@@ -48,6 +49,7 @@ use Sellinnate\SalesCrm\Workspaces\Workspace;
  * @property-read Pipeline|null $currentPipeline
  * @property-read Collection<int, Pipeline> $pipelines
  * @property-read list<RequiredField> $pendingMissing
+ * @property-read bool $draftNeedsReason
  * @property-read bool $pendingNeedsReason
  * @property-read string $pendingStageName
  * @property-read list<array{stage: Stage, deals: Collection<int, Deal>, count: int, value: int, weighted: int, more: int}> $columns
@@ -481,6 +483,11 @@ class DealsBoard extends Component
         $data = $this->draft;
         $data['pipeline_id'] = $pipeline->id;
 
+        // A reason chosen for a lost stage, then another stage picked: not carried along.
+        if (! $this->draftNeedsReason) {
+            unset($data['lost_reason'], $data['lost_note']);
+        }
+
         if (! $this->access()->isMember($data['owner_id'] ?? null, $pipeline->workspaceRef())) {
             $data['owner_id'] = null;
         }
@@ -511,6 +518,15 @@ class DealsBoard extends Component
         $stage = $this->currentPipeline?->stages->firstWhere('id', (int) ($this->draft['stage_id'] ?? 0));
 
         return $stage instanceof Stage ? $stage->requiredFields() : [];
+    }
+
+    /**
+     * A deal created straight in a lost stage says why (the quick add shows the field).
+     */
+    #[Computed]
+    public function draftNeedsReason(): bool
+    {
+        return $this->currentPipeline?->stages->firstWhere('id', (int) ($this->draft['stage_id'] ?? 0))?->kind === StageKind::Lost;
     }
 
     // ---- The list -------------------------------------------------------------------------

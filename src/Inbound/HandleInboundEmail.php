@@ -7,6 +7,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Sellinnate\SalesCrm\Authorization\Access;
 use Sellinnate\SalesCrm\Data\InboundEmail;
@@ -62,6 +63,11 @@ class HandleInboundEmail
             // The same person in more workspaces says nothing of whose matter it is: not kept.
             $people = $sender === null ? $people : $this->workedBy($people, $sender);
             $targets = count($people) === 1 ? $people : [];
+
+            if (count($people) > 1) {
+                // Never silent: whoever looks for a lost email finds why (route it by workspace to keep it).
+                Log::info('sales-crm: inbound email kept by no workspace, its sender is a person in several', ['message_id' => $messageId, 'workspaces' => count($people)]);
+            }
         } else {
             $targets = $sender === null ? $threads : $this->workedBy($threads, $sender);
         }
@@ -108,6 +114,7 @@ class HandleInboundEmail
 
         try {
             return Crm::db()->transaction(function () use ($email, $messageId, $workspace, $dealId, $personId, $outbound, $at): Email {
+                Crm::lockDeal($dealId);
                 $inReplyTo = MessageId::normalize($email->inReplyTo);
 
                 $stored = (new Email([

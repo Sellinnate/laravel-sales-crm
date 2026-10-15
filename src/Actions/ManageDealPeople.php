@@ -44,6 +44,7 @@ class ManageDealPeople
         $validated = self::validate($workspace, $data);
 
         return $this->matcher->locked($workspace, fn (): Person => Crm::db()->transaction(function () use ($deal, $workspace, $validated, $by): Person {
+            Crm::lockDeal($deal->id);
             $person = isset($validated['person_id'])
                 ? Person::query()->inWorkspace($workspace)->findOrFail((int) $validated['person_id'])
                 : $this->matcher->person($workspace, $validated, $deal->company, $by);

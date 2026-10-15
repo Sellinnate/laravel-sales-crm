@@ -131,3 +131,10 @@ it('asks for the workspace of a new deal when the user works in several', functi
     expect(Deal::query()->where('title', 'Where?')->exists())->toBeFalse()
         ->and(Deal::query()->where('title', 'Here')->first()?->inWorkspace($alpha))->toBeTrue();
 });
+
+it('takes the reason of a loss inside fill too', function () {
+    SalesCrmServer::actingAs($this->seller)->tool(CrmDealMoveTool::class, ['deal_id' => $this->deal->id, 'stage_id' => crmStage($this->pipeline, 'Lost')->id, 'fill' => ['lost_reason' => 'price']])
+        ->assertOk();
+
+    expect($this->deal->fresh()->lost_reason?->value)->toBe('price');
+});
