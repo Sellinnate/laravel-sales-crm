@@ -15,6 +15,7 @@ use Sellinnate\SalesCrm\Models\Deal;
 use Sellinnate\SalesCrm\Models\Note;
 use Sellinnate\SalesCrm\Services\Import\Importer;
 use Sellinnate\SalesCrm\Services\Import\ImportFields;
+use Sellinnate\SalesCrm\Services\Import\SpreadsheetReader;
 
 beforeEach(function () {
     Storage::fake('local');
@@ -152,4 +153,23 @@ it('downloads the rejected rows as CSV, for managers', function () {
     $response = $this->actingAs($this->admin)->get(route('sales-crm.imports.rejected', $import));
     $response->assertOk();
     expect($response->streamedContent())->toContain('no title here')->not->toContain('Good one');
+});
+
+it('numbers the XLSX rows as the sheet does, across empty rows', function () {
+    Storage::fake('local');
+    $path = sys_get_temp_dir().'/crm-test-'.uniqid().'.xlsx';
+    $writer = new Writer;
+    $writer->openToFile($path);
+    $writer->addRow(Row::fromValues(['Title', 'Company']));
+    $writer->addRow(Row::fromValues([]));
+    $writer->addRow(Row::fromValues(['', '']));
+    $writer->addRow(Row::fromValues(['Mobile app', 'Orbital Robotics']));
+    $writer->close();
+    Storage::disk('local')->put('imports/rows.xlsx', (string) file_get_contents($path));
+    @unlink($path);
+
+    $rows = iterator_to_array((new SpreadsheetReader('local', 'imports/rows.xlsx'))->rows());
+
+    expect(array_keys($rows))->toBe([1, 4])
+        ->and($rows[4])->toBe(['Mobile app', 'Orbital Robotics']);
 });

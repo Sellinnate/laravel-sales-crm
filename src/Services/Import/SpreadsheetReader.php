@@ -4,7 +4,10 @@ namespace Sellinnate\SalesCrm\Services\Import;
 
 use Generator;
 use Illuminate\Support\Facades\Storage;
+use OpenSpout\Reader\XLSX\Options as XlsxOptions;
 use OpenSpout\Reader\XLSX\Reader as XlsxReader;
+use ReflectionClass;
+use ReflectionProperty;
 use RuntimeException;
 use Sellinnate\SalesCrm\Exceptions\ImportException;
 
@@ -182,13 +185,31 @@ class SpreadsheetReader
         }
     }
 
+    /**
+     * Empty rows kept, so the rows keep their number in the sheet: openspout 5 takes its options in
+     * the constructor, openspout 4 as public properties.
+     */
+    private static function xlsxOptions(): XlsxOptions
+    {
+        $class = new ReflectionClass(XlsxOptions::class);
+
+        if (($class->getConstructor()?->getNumberOfParameters() ?? 0) > 0) {
+            return $class->newInstanceArgs(['SHOULD_PRESERVE_EMPTY_ROWS' => true]);
+        }
+
+        $options = $class->newInstance();
+        (new ReflectionProperty($options, 'SHOULD_PRESERVE_EMPTY_ROWS'))->setValue($options, true);
+
+        return $options;
+    }
+
     private function xlsx(): XlsxReader
     {
         if (! self::supportsXlsx()) {
             throw new ImportException((string) __('sales-crm::validation.import_xlsx_unsupported'));
         }
 
-        $reader = new XlsxReader;
+        $reader = new XlsxReader(self::xlsxOptions());
 
         try {
             $reader->open($this->localPath());

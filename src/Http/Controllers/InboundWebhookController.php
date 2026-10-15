@@ -11,12 +11,14 @@ use Throwable;
 
 /**
  * The inbound webhook: your mail provider (or a small adapter of yours) POSTs the emails as JSON —
- * one email, or `{"emails": [...]}` — signed with HMAC-SHA256 of the raw body and the secret of
+ * one email, or `{"emails": [...]}` with at most MAX_BATCH — signed with HMAC-SHA256 of the raw body and the secret of
  * `sales-crm.email.inbound.webhook_secret` in the `X-Sales-Crm-Signature` header. Without a secret
  * the webhook is closed.
  */
 class InboundWebhookController extends Controller
 {
+    public const MAX_BATCH = 100;
+
     public function __invoke(Request $request, Inbound $inbound): JsonResponse
     {
         $secret = config('sales-crm.email.inbound.webhook_secret');
@@ -32,7 +34,12 @@ class InboundWebhookController extends Controller
         $emails = isset($payload['emails']) && is_array($payload['emails']) ? $payload['emails'] : [$payload];
         $stored = 0;
 
-        foreach (array_slice($emails, 0, 100) as $email) {
+        // Refused whole, never cut: the sender splits the batch and retries, no email is lost.
+        if (count($emails) > self::MAX_BATCH) {
+            return new JsonResponse(['message' => 'At most '.self::MAX_BATCH.' emails per request.', 'max' => self::MAX_BATCH], 413);
+        }
+
+        foreach ($emails as $email) {
             if (! is_array($email)) {
                 continue;
             }

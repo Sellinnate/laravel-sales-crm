@@ -1,5 +1,10 @@
 <?php
 
+use DirectoryTree\ImapEngine\Collections\MessageCollection;
+use DirectoryTree\ImapEngine\FolderInterface;
+use DirectoryTree\ImapEngine\FolderRepositoryInterface;
+use DirectoryTree\ImapEngine\MailboxInterface;
+use DirectoryTree\ImapEngine\MessageQueryInterface;
 use DirectoryTree\ImapEngine\Testing\FakeMessage;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
@@ -189,4 +194,49 @@ it('polls the inbound driver and maps IMAP messages', function () {
 
     $this->artisan('sales-crm:poll-inbox', ['--driver' => 'memory'])->expectsOutputToContain('1 email(s) read, 1 stored')->assertSuccessful();
     expect(Email::query()->where('message_id', 'imap-1@acme.example')->value('deal_id'))->toBe($this->deal->id);
+});
+
+it('refuses a webhook batch larger than the limit instead of cutting it', function () {
+    config(['sales-crm.email.inbound.webhook_secret' => 'top-secret']);
+    $emails = array_map(fn (int $i): array => ['message_id' => 'b-'.$i.'@acme.example', 'from' => 'jane@acme.example', 'subject' => 'Batch '.$i, 'text' => 'Hello'], range(1, 101));
+    $payload = json_encode(['emails' => $emails]);
+
+    $this->call('POST', '/sales-crm/inbound', [], [], [], ['CONTENT_TYPE' => 'application/json', 'HTTP_X_SALES_CRM_SIGNATURE' => hash_hmac('sha256', $payload, 'top-secret')], $payload)
+        ->assertStatus(413)
+        ->assertJson(['max' => 100]);
+
+    expect(Email::query()->where('message_id', 'like', 'b-%')->count())->toBe(0);
+});
+
+it('reads the IMAP folders oldest first, from the message after the cursor', function () {
+    $message = new FakeMessage(42, [], "Message-ID: <imap-42@acme.example>\r\nFrom: jane@acme.example\r\nSubject: Hi\r\n\r\nHello");
+    $calls = [];
+    $query = Mockery::mock(MessageQueryInterface::class);
+
+    foreach (['withHeaders', 'withBody', 'leaveUnread', 'setFetchOrderAsc', 'uid', 'since', 'limit'] as $method) {
+        $query->shouldReceive($method)->andReturnUsing(function (...$arguments) use ($method, &$calls, $query) {
+            $calls[] = $method;
+
+            return $query;
+        });
+    }
+
+    $query->shouldReceive('get')->andReturn(new MessageCollection([$message]));
+    $folder = Mockery::mock(FolderInterface::class);
+    $folder->shouldReceive('messages')->andReturn($query);
+    $folders = Mockery::mock(FolderRepositoryInterface::class);
+    $folders->shouldReceive('find')->with('INBOX')->andReturn($folder);
+    $mailbox = Mockery::mock(MailboxInterface::class);
+    $mailbox->shouldReceive('folders')->andReturn($folders);
+    $mailbox->shouldReceive('config')->andReturn('imap.example.test');
+
+    $cache = app('cache')->store();
+    $cache->forever('sales-crm:imap:'.md5('imap.example.test|imap.example.test|INBOX'), 41);
+    $emails = iterator_to_array((new ImapDriver($mailbox, $cache, ['INBOX'], [], 10))->fetch(), false);
+
+    expect($emails)->toHaveCount(1)
+        ->and($calls)->toContain('setFetchOrderAsc')
+        ->and(array_search('setFetchOrderAsc', $calls, true))->toBeLessThan(array_search('limit', $calls, true))
+        ->and($calls)->toContain('uid')->not->toContain('since')
+        ->and($cache->get('sales-crm:imap:'.md5('imap.example.test|imap.example.test|INBOX')))->toBe(42);
 });

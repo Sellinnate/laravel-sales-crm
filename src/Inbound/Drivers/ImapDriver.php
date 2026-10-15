@@ -41,7 +41,8 @@ class ImapDriver implements InboundDriver
 
             $key = 'sales-crm:imap:'.md5($this->mailbox->config('host').'|'.$this->mailbox->config('username').'|'.$path);
             $cursor = $this->cache->get($key);
-            $query = $folder->messages()->withHeaders()->withBody()->leaveUnread();
+            // Oldest first: the cursor is the highest UID read, so a newer batch must never come before an older one.
+            $query = $folder->messages()->withHeaders()->withBody()->leaveUnread()->setFetchOrderAsc();
             is_numeric($cursor) ? $query->uid((int) $cursor + 1, INF) : $query->since(CarbonImmutable::now()->subDays(2));
             $last = is_numeric($cursor) ? (int) $cursor : 0;
 
