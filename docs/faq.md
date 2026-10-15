@@ -154,6 +154,13 @@ people, activities and notes into the shared CRM (never in production unless
 forced). With workspaces, seed them from code; see
 [Workspaces](/concepts/workspaces#demo-data-with-workspaces).
 
+## Does search work the same on SQLite?
+
+Almost. SQLite's `LOWER()` only folds ASCII letters, so a search for `nicolò`
+doesn't find `NICOLÒ` there (MySQL and PostgreSQL find it). Matching people by
+name when deals are created or imported compares in PHP, so de-duplication is
+not affected. Use MySQL or PostgreSQL in production.
+
 ## What is not included?
 
 - Mass mailing, campaigns and marketing automation.

@@ -51,7 +51,7 @@ class RunImport implements ShouldQueue
     {
         $import = Import::query()->find($this->importId);
 
-        if ($import === null || $import->status !== ImportStatus::Mapped) {
+        if ($import === null || $import->status !== ImportStatus::Queued) {
             return;
         }
 
@@ -69,7 +69,7 @@ class RunImport implements ShouldQueue
 
     public function failed(?Throwable $exception): void
     {
-        $import = Import::query()->whereKey($this->importId)->whereIn('status', [ImportStatus::Mapped->value, ImportStatus::Running->value])->first();
+        $import = Import::query()->whereKey($this->importId)->whereIn('status', [ImportStatus::Queued->value, ImportStatus::Running->value])->first();
 
         if ($import !== null) {
             $import->forceFill(['status' => ImportStatus::Failed, 'error' => (string) __('sales-crm::import.stopped')])->save();

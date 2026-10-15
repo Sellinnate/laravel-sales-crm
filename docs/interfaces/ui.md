@@ -94,8 +94,9 @@ URL, so a filtered board can be bookmarked or shared.
 
 ## The list view
 
-The same deals as a table: sortable columns (value, next activity, expected
-close, offer validity, updated, created, title), a column chooser (including
+The same deals as a table: sortable columns (title, value, next activity,
+expected close, offer validity; `?sort=updated` or `?sort=created` in the URL
+for the most recently changed or created), a column chooser (including
 custom fields), **inline edit** of fields, **bulk actions** on selected deals
 (move to a stage, change owner, change priority, delete) and **Export** to
 CSV/XLSX. Bulk actions apply deal by deal: deals that can't take the change (a

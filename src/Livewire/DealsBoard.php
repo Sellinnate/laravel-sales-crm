@@ -2,6 +2,7 @@
 
 namespace Sellinnate\SalesCrm\Livewire;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -21,6 +22,7 @@ use Sellinnate\SalesCrm\Actions\MoveDeal;
 use Sellinnate\SalesCrm\Actions\SaveView;
 use Sellinnate\SalesCrm\Actions\UpdateDeal;
 use Sellinnate\SalesCrm\Contracts\WorkspaceResolver;
+use Sellinnate\SalesCrm\Enums\ActivityType;
 use Sellinnate\SalesCrm\Enums\RequiredField;
 use Sellinnate\SalesCrm\Exceptions\MissingRequirements;
 use Sellinnate\SalesCrm\Livewire\Concerns\InteractsWithCrm;
@@ -461,6 +463,8 @@ class DealsBoard extends Component
             'owner_id' => (string) (Crm::userKey($this->viewer()) ?? ''),
             'priority' => '',
             'source' => 'other',
+            // Shown when the stage asks for it, with what the select displays: written only with a title.
+            'next_activity' => ['type' => ActivityType::Call->value, 'title' => '', 'due_date' => CarbonImmutable::tomorrow()->toDateString(), 'due_time' => ''],
         ];
         $this->showCreate = true;
     }

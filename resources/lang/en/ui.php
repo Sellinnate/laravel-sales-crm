@@ -124,6 +124,7 @@ return [
     'reminder' => ['0' => 'At the time', '15' => '15 minutes before', '60' => '1 hour before', '1440' => '1 day before'],
     'reminder_before' => ':time before',
     'activity_saved' => 'Activity saved.',
+    'activity_gone' => 'This activity was deleted meanwhile.',
     'activity_done' => 'Activity done.',
     'mark_done' => 'Mark as done',
     'planned_activities' => 'Planned activities',

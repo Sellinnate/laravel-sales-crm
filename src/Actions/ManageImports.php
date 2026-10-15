@@ -149,11 +149,38 @@ class ManageImports
     {
         Gate::forUser($by)->authorize('create', [Pipeline::class, $import->workspaceRef()]);
 
-        if ($import->status !== ImportStatus::Mapped) {
+        // From "ready" to "queued" in one conditional write: two clicks start it once, and from now on
+        // its mapping and its sheet stay as the job will read them.
+        if (Import::query()->whereKey($import->id)->where('status', ImportStatus::Mapped->value)->update(['status' => ImportStatus::Queued->value]) === 0) {
             throw ValidationException::withMessages(['import' => __('sales-crm::validation.import_not_mapped')]);
         }
 
+        $import->status = ImportStatus::Queued;
+        $import->syncOriginalAttribute('status');
         RunImport::dispatch($import->id, Crm::userKey($by));
+
+        return $import;
+    }
+
+    /**
+     * Read another sheet of the file: its columns are mapped again.
+     *
+     * @throws AuthorizationException
+     * @throws ValidationException
+     */
+    public function sheet(Import $import, string $sheet, Authenticatable $by): Import
+    {
+        Gate::forUser($by)->authorize('create', [Pipeline::class, $import->workspaceRef()]);
+
+        if (! in_array($import->status, [ImportStatus::Uploaded, ImportStatus::Mapped], true)) {
+            throw ValidationException::withMessages(['import' => __('sales-crm::validation.import_started')]);
+        }
+
+        if (! in_array($sheet, (new SpreadsheetReader($import->disk, $import->stored_path))->sheets(), true)) {
+            throw ValidationException::withMessages(['sheet' => __('sales-crm::validation.import_sheet')]);
+        }
+
+        $import->forceFill(['sheet' => $sheet, 'mapping' => null, 'status' => ImportStatus::Uploaded])->save();
 
         return $import;
     }

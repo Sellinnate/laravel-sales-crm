@@ -114,6 +114,10 @@ class CreateDeal
             $this->fields->check($deal, $by);
             $deal->save();
 
+            // The cards of the column before the row of the pipeline (touched by the completions too),
+            // in the order of every other change of a card: never a deadlock with them.
+            $append ? $this->positions->append($deal) : $this->positions->place($deal, null);
+
             $this->completions->write($deal, $completions, $by, $deal->offer_valid_until?->toDateString());
 
             $missing = $requirements ? $this->requirements->missing($deal, $stage) : [];
@@ -127,11 +131,13 @@ class CreateDeal
                 ApprovalRequested::dispatch($deal, $by);
             }
 
-            $append ? $this->positions->append($deal) : $this->positions->place($deal, null);
             $deal->setRelation('stage', $stage);
             $this->history->created($deal, $by, $now);
             $this->completions->onEnter($deal, $stage);
             $this->positions->touch($pipeline->id);
+
+            // The next activity and the last contact were written on another instance (the activities).
+            $deal->refresh();
 
             DealCreated::dispatch($deal, $by);
 

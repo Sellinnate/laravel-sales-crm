@@ -129,7 +129,7 @@
                 <div class="flex justify-end"><button type="button" class="crm-btn crm-btn-primary" wire:click="run" data-test="import-run"><x-sales-crm::icon name="zap" :size="14" /> {{ __('sales-crm::ui.import.run') }}</button></div>
             </div>
         @else
-            <section class="crm-card crm-card-body max-w-2xl" @if ($import->status === ImportStatus::Running) wire:poll.3s @endif data-test="import-report">
+            <section class="crm-card crm-card-body max-w-2xl" @if (in_array($import->status, [ImportStatus::Queued, ImportStatus::Running], true)) wire:poll.3s @endif data-test="import-report">
                 <div class="flex items-center justify-between">
                     <h2 class="text-[15px] font-semibold">{{ $import->original_filename }}</h2>
                     <x-sales-crm::badge :tone="$import->status->tone()" data-test="import-status">{{ $import->status->label() }}</x-sales-crm::badge>

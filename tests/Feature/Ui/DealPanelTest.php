@@ -170,3 +170,14 @@ it('labels the reminder options added in the config', function () {
         ->assertSee(['At the time', '30 minutes before', '1 week before'])
         ->assertDontSee('sales-crm::ui.reminder');
 });
+
+it('never creates again an activity deleted while its form was open', function () {
+    $activity = SalesCrm::scheduleActivity($this->deal, ['type' => 'call', 'title' => 'Call back', 'due_date' => now()->toDateString()], $this->seller);
+
+    $panel = Livewire::test(DealPanel::class, ['dealId' => $this->deal->id])->call('editActivity', $activity->id);
+    $activity->delete();
+
+    $panel->set('activity.title', 'Changed')->call('saveActivity');
+
+    expect(Activity::query()->where('deal_id', $this->deal->id)->count())->toBe(0);
+});

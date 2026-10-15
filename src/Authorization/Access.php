@@ -123,7 +123,7 @@ class Access
     {
         $key = $user instanceof Authenticatable || $user instanceof Model ? Crm::userKey($user) : $user;
 
-        return $key !== null && $key !== '' && $this->members($workspace)->whereKey($key)->exists();
+        return Crm::isUserKey($key) && $this->members($workspace)->whereKey($key)->exists();
     }
 
     public function label(Model|Workspace|null $workspace): string

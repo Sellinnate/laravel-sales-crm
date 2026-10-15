@@ -8,6 +8,7 @@ use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 /**
@@ -144,6 +145,28 @@ final class Crm
     /**
      * The key of a user as stored in the CRM columns.
      */
+    /**
+     * Whether a value from outside (a filter, a form, the API) can be a key of the users, by
+     * `database.user_key_type`: PostgreSQL refuses to compare a bigint with "abc" instead of finding nothing.
+     */
+    public static function isUserKey(mixed $key): bool
+    {
+        if (is_int($key)) {
+            return $key > 0;
+        }
+
+        if (! is_string($key) || $key === '') {
+            return false;
+        }
+
+        return match ((string) config('sales-crm.database.user_key_type', 'int')) {
+            'int' => ctype_digit($key) && strlen($key) <= 19,
+            'uuid' => Str::isUuid($key),
+            'ulid' => Str::isUlid($key),
+            default => strlen($key) <= 255,
+        };
+    }
+
     public static function userKey(Authenticatable|Model|null $user): int|string|null
     {
         if ($user === null) {

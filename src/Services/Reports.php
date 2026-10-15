@@ -166,7 +166,9 @@ class Reports
             'no_activity' => $count('no_activity'),
             'offer_expired' => $count('offer_expired'),
             'offer_expiring' => $this->board->query($viewer, ['owner' => $ownerId, 'closed' => 'all'], null, $workspace)->open()
-                ->whereBetween(Crm::table('deals').'.offer_valid_until', [$today->toDateString(), $today->addDays($days)->toDateString()])
+                // Half-open: SQLite keeps the date with a time, so the last day must be compared as < the next one.
+                ->where(Crm::table('deals').'.offer_valid_until', '>=', $today->toDateString())
+                ->where(Crm::table('deals').'.offer_valid_until', '<', $today->addDays($days + 1)->toDateString())
                 ->count(),
         ];
     }

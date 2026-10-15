@@ -182,3 +182,19 @@ it('forgets the selection of the list when other rows are shown', function () {
         ->set('selected', [$deal->id])->call('toggleQuick', 'p1')->assertSet('selected', [])
         ->set('selected', [$deal->id])->call('resetFilters')->assertSet('selected', []);
 });
+
+it('creates a deal in a stage asking for the next activity with the type the form shows', function () {
+    $qualified = crmStage($this->pipeline, 'Qualified');
+    $qualified->forceFill(['required_fields' => ['next_activity']])->save();
+
+    Livewire::test(DealsBoard::class)
+        ->call('startCreate', $qualified->id)
+        ->set('draft.title', 'Needs a call')
+        ->set('draft.next_activity.title', 'Discovery call')
+        ->call('createDeal')
+        ->assertHasNoErrors();
+
+    $deal = Deal::query()->where('title', 'Needs a call')->firstOrFail();
+    expect($deal->stage_id)->toBe($qualified->id)
+        ->and($deal->activities()->first()?->type->value)->toBe('call');
+});

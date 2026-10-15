@@ -71,7 +71,8 @@
 
                 anchor ? list.insertBefore(card, anchor) : list.appendChild(card);
                 this.end();
-                wire.moveDeal(card.dataset.deal, stageId, previous ? previous.dataset.deal : null);
+                // Refused with an error (403, 419, network): the board is drawn again, the card goes back.
+                Promise.resolve(wire.moveDeal(card.dataset.deal, stageId, previous ? previous.dataset.deal : null)).catch(() => wire.$refresh());
             },
 
             clear() {

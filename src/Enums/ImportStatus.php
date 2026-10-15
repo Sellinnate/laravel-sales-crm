@@ -10,6 +10,8 @@ enum ImportStatus: string
 
     case Uploaded = 'uploaded';
     case Mapped = 'mapped';
+    // Handed to the queue: its mapping can no longer change.
+    case Queued = 'queued';
     case Running = 'running';
     case Done = 'done';
     case Failed = 'failed';
@@ -18,7 +20,7 @@ enum ImportStatus: string
     {
         return match ($this) {
             self::Uploaded, self::Mapped => 'neutral',
-            self::Running => 'info',
+            self::Queued, self::Running => 'info',
             self::Done => 'success',
             self::Failed => 'danger',
         };

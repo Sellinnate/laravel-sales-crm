@@ -166,11 +166,11 @@ class Matcher
             return null;
         }
 
-        return $query()
-            ->where('company_id', $companyId)
-            ->whereRaw("LOWER(COALESCE(first_name, '')) = ?", [mb_strtolower($first)])
-            ->whereRaw("LOWER(COALESCE(last_name, '')) = ?", [mb_strtolower($last)])
-            ->first();
+        // Compared in PHP: the LOWER() of SQLite knows ASCII only (NICOLÒ is not nicolò). A company has few people.
+        [$first, $last] = [mb_strtolower($first), mb_strtolower($last)];
+
+        return $query()->where('company_id', $companyId)->orderBy('id')->get()
+            ->first(fn (Person $person): bool => mb_strtolower(trim((string) $person->first_name)) === $first && mb_strtolower(trim((string) $person->last_name)) === $last);
     }
 
     /**

@@ -166,8 +166,8 @@ return new class extends Migration
 
             $table->timestamp('stage_entered_at')->nullable();
             $table->timestamp('last_activity_at')->nullable();
-            $table->timestamp('next_activity_at')->nullable();
-            $table->timestamp('last_contacted_at')->nullable();
+            $table->dateTime('next_activity_at')->nullable();
+            $table->dateTime('last_contacted_at')->nullable();
             $table->date('data_verified_at')->nullable();
 
             Columns::user($table, 'created_by');
@@ -243,7 +243,8 @@ return new class extends Migration
             $table->string('type', 16);
             $table->string('title', 200);
             $table->text('notes')->nullable();
-            $table->timestamp('due_at');
+            // dateTime, not timestamp: dates typed by users (or read from emails) may fall outside 1970-2038.
+            $table->dateTime('due_at');
             $table->boolean('has_time')->default(true);
             $table->unsignedSmallInteger('remind_minutes')->nullable();
             $table->timestamp('reminded_at')->nullable();
@@ -312,7 +313,7 @@ return new class extends Migration
             $table->string('in_reply_to', 255)->nullable();
             $table->text('references')->nullable();
             Columns::user($table, 'sent_by');
-            $table->timestamp('sent_at')->nullable();
+            $table->dateTime('sent_at')->nullable();
             $table->text('error')->nullable();
             $table->timestamps();
 

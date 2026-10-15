@@ -121,6 +121,7 @@ return [
     'reminder' => ['0' => 'All\'ora', '15' => '15 minuti prima', '60' => '1 ora prima', '1440' => '1 giorno prima'],
     'reminder_before' => ':time prima',
     'activity_saved' => 'Attività salvata.',
+    'activity_gone' => 'Questa attività è stata eliminata nel frattempo.',
     'activity_done' => 'Attività completata.',
     'mark_done' => 'Segna come fatta',
     'planned_activities' => 'Attività pianificate',

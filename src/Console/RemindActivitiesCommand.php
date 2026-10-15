@@ -76,6 +76,6 @@ class RemindActivitiesCommand extends Command
     {
         $options = array_map(intval(...), array_filter((array) config('sales-crm.activities.reminder_options', []), is_numeric(...)));
 
-        return max(2880, ...$options);
+        return max([2880, ...$options]);
     }
 }

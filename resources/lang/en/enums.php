@@ -18,7 +18,7 @@ return [
         'quote' => 'Quote', 'contract' => 'Contract', 'signature_evidence' => 'Signature evidence',
         'payment_evidence' => 'Payment evidence', 'other' => 'Other',
     ],
-    'import_status' => ['uploaded' => 'Uploaded', 'mapped' => 'Ready', 'running' => 'Running', 'done' => 'Completed', 'failed' => 'Failed'],
+    'import_status' => ['uploaded' => 'Uploaded', 'mapped' => 'Ready', 'queued' => 'Waiting to start', 'running' => 'Running', 'done' => 'Completed', 'failed' => 'Failed'],
     'lost_reason' => [
         'price' => 'Price', 'timing' => 'Timing', 'competitor' => 'Competitor', 'no_response' => 'No response',
         'no_budget' => 'No budget', 'not_in_target' => 'Not a fit', 'postponed' => 'Postponed', 'other' => 'Other',

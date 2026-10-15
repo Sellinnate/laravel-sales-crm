@@ -98,6 +98,8 @@ class DealPanel extends Component
     /** @var array<string, mixed> */
     public array $activity = [];
 
+    // Set by the server only (editActivity()): never an id chosen by the browser.
+    #[Locked]
     public ?int $editingActivity = null;
 
     /** @var array<string, string> */
@@ -483,6 +485,15 @@ class DealPanel extends Component
     {
         $this->resetErrorBag();
         $activity = $this->editingActivity === null ? null : Activity::query()->where('deal_id', $this->dealId)->find($this->editingActivity);
+
+        // Deleted meanwhile (by a colleague, in another tab): never created again as a new one.
+        if ($this->editingActivity !== null && $activity === null) {
+            $this->resetActivity();
+            $this->action = '';
+            $this->notify((string) __('sales-crm::ui.activity_gone'), 'danger');
+
+            return;
+        }
 
         try {
             app(ManageActivities::class)->save($this->deal(), $this->activity, $this->viewer(), $activity);

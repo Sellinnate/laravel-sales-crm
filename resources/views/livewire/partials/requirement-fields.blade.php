@@ -77,7 +77,7 @@
                 @break
             @case(RequiredField::NextActivity)
                 <div class="grid gap-2 sm:col-span-2 sm:grid-cols-[auto_1fr_auto_auto]">
-                    <x-sales-crm::field :label="__('sales-crm::fields.activity.type')">
+                    <x-sales-crm::field :label="__('sales-crm::fields.activity.type')" :error="$model.'.next_activity.type'">
                         <select class="crm-select" wire:model="{{ $model }}.next_activity.type">
                             @foreach (ActivityType::options() as $value => $label)
                                 <option value="{{ $value }}">{{ $label }}</option>
@@ -90,7 +90,7 @@
                     <x-sales-crm::field :label="__('sales-crm::fields.activity.due_date')" :error="$model.'.next_activity.due_date'">
                         <input type="date" class="crm-input" wire:model="{{ $model }}.next_activity.due_date">
                     </x-sales-crm::field>
-                    <x-sales-crm::field :label="__('sales-crm::fields.activity.due_time')">
+                    <x-sales-crm::field :label="__('sales-crm::fields.activity.due_time')" :error="$model.'.next_activity.due_time'">
                         <input type="time" class="crm-input" wire:model="{{ $model }}.next_activity.due_time">
                     </x-sales-crm::field>
                 </div>

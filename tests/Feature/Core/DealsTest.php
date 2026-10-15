@@ -319,3 +319,15 @@ it('takes from the fill of a move only what a stage may ask for', function () {
         ->and($deal->title)->toBe('Fill me')
         ->and($deal->approval_status)->toBe($before);
 });
+
+it('returns and announces the deal with the next activity written by its creation or its move', function () {
+    Event::fake([DealCreated::class, DealStageChanged::class]);
+
+    $created = SalesCrm::shared()->createDeal(['title' => 'Planned', 'next_activity' => ['type' => 'call', 'title' => 'Intro call', 'due_date' => now()->addDay()->toDateString()]], $this->seller);
+    $moved = SalesCrm::moveDeal(SalesCrm::shared()->createDeal(['title' => 'To move', 'amount_once' => 500], $this->seller), crmStage($this->pipeline, 'Proposal sent'), $this->seller, fill: ['offer_valid_until' => '2030-01-31']);
+
+    expect($created->next_activity_at)->not->toBeNull()
+        ->and($moved->next_activity_at)->not->toBeNull();
+    Event::assertDispatched(DealCreated::class, fn (DealCreated $event): bool => $event->deal->title !== 'Planned' || $event->deal->next_activity_at !== null);
+    Event::assertDispatched(DealStageChanged::class, fn (DealStageChanged $event): bool => $event->deal->next_activity_at !== null);
+});

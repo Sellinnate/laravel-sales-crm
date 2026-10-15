@@ -118,3 +118,11 @@ it('gives the deals of a deleted person their next primary contact', function ()
         ->and($deal->fresh()->people->first()->id)->toBe($bob->id)
         ->and($deal->fresh()->people->first()->pivot->is_primary)->toBeTruthy();
 });
+
+it('matches people by name in their company whatever the case of accented letters', function () {
+    $company = SalesCrm::shared()->company(['name' => 'Acme']);
+    $nicolo = SalesCrm::shared()->person(['first_name' => 'NICOLÒ', 'last_name' => 'D\'ANGELO'], $company);
+
+    expect(SalesCrm::shared()->person(['first_name' => 'Nicolò', 'last_name' => 'd\'Angelo'], $company)->is($nicolo))->toBeTrue()
+        ->and(Person::query()->count())->toBe(1);
+});

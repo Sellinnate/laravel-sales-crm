@@ -247,3 +247,17 @@ it('leaves the owner unset, with a warning, when two users share the name of the
         ->and(Deal::query()->where('title', 'By email')->first()?->owner?->email)->toBe('mario.two@vendor.example')
         ->and(collect($preview[0]['warnings'] ?? [])->implode(' '))->not->toBe('');
 });
+
+it('freezes the mapping of an import handed to the queue', function () {
+    config(['queue.default' => 'null']);
+    $import = $this->imports->upload(null, $this->pipeline, csvFile('queued.csv', [['Title'], ['Queued deal']]), $this->admin);
+    $this->imports->map($import, ['columns' => [0 => 'title']], $this->admin);
+
+    $queued = $this->imports->run($import->fresh(), $this->admin);
+
+    expect($queued->status)->toBe(ImportStatus::Queued)
+        ->and(fn () => $this->imports->run($import->fresh(), $this->admin))->toThrow(ValidationException::class)
+        ->and(fn () => $this->imports->map($import->fresh(), ['columns' => [0 => 'company']], $this->admin))->toThrow(ValidationException::class)
+        ->and(fn () => $this->imports->sheet($import->fresh(), 'Other', $this->admin))->toThrow(ValidationException::class)
+        ->and($import->fresh()->mapping['columns'] ?? null)->toBe([0 => 'title']);
+});

@@ -74,9 +74,11 @@ class DealBoard
                 ->orWhere($table.'.won_at', '>=', $now->subDays($closedDays))
                 ->orWhere($table.'.lost_at', '>=', $now->subDays($closedDays))))
             ->when($search !== '', fn (Builder $query) => $this->search($query, $search))
-            ->when($owner !== null && $owner !== '', fn (Builder $query) => $owner === 'none'
-                ? $query->whereNull($table.'.owner_id')
-                : $query->where($table.'.owner_id', $owner))
+            ->when($owner !== null && $owner !== '', fn (Builder $query) => match (true) {
+                $owner === 'none' => $query->whereNull($table.'.owner_id'),
+                Crm::isUserKey($owner) => $query->where($table.'.owner_id', $owner),
+                default => $query->whereRaw('1 = 0'),
+            })
             ->when(Priority::tryFrom((string) ($filters['priority'] ?? '')), fn (Builder $query, Priority $priority) => $query->where($table.'.priority', $priority->value))
             ->when(filled($filters['source'] ?? null), fn (Builder $query) => $query->where($table.'.source', (string) ($filters['source'] ?? '')))
             ->when(filled($filters['stage'] ?? null), fn (Builder $query) => $query->where($table.'.stage_id', (int) ($filters['stage'] ?? 0)))

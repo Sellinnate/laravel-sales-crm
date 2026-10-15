@@ -276,7 +276,7 @@ Indexes: unique `user_id, workspace_key, name`; `workspace_key, shared`.
 | `user_id` | who started it |
 | `pipeline_id` | → pipelines, set null |
 | `original_filename`, `disk`, `stored_path`, `sheet` | |
-| `status` | `uploaded`, `mapped`, `running`, `done`, `failed` |
+| `status` | `uploaded`, `mapped`, `queued`, `running`, `done`, `failed` |
 | `mapping` | JSON columns, stages, default stage, month-first |
 | `total_rows`, `created_count`, `updated_count`, `rejected_count` | |
 | `rejected`, `warnings` | JSON reports |

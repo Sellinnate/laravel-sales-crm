@@ -273,5 +273,5 @@ All in `Sellinnate\SalesCrm\Enums`, string-backed, with `label()` (translated),
 | `DocumentKind` | `quote`, `contract`, `signature_evidence`, `payment_evidence`, `other` |
 | `EmailDirection` | `out`, `in` |
 | `EmailStatus` | `queued`, `sending`, `sent`, `failed`, `received` |
-| `ImportStatus` | `uploaded`, `mapped`, `running`, `done`, `failed` |
+| `ImportStatus` | `uploaded`, `mapped`, `queued`, `running`, `done`, `failed` |
 | `DealEventType` | `created`, `stage_changed`, `updated`, `won`, `lost`, `reopened` |

@@ -212,11 +212,13 @@ it('refuses a webhook batch larger than the limit instead of cutting it', functi
 it('reads the IMAP folders oldest first, from the message after the cursor', function () {
     $message = new FakeMessage(42, [], "Message-ID: <imap-42@acme.example>\r\nFrom: jane@acme.example\r\nSubject: Hi\r\n\r\nHello");
     $calls = [];
+    $arguments_of = [];
     $query = Mockery::mock(MessageQueryInterface::class);
 
     foreach (['withHeaders', 'withBody', 'leaveUnread', 'setFetchOrderAsc', 'uid', 'since', 'limit'] as $method) {
-        $query->shouldReceive($method)->andReturnUsing(function (...$arguments) use ($method, &$calls, $query) {
+        $query->shouldReceive($method)->andReturnUsing(function (...$arguments) use ($method, &$calls, &$arguments_of, $query) {
             $calls[] = $method;
+            $arguments_of[$method] = $arguments;
 
             return $query;
         });
@@ -247,6 +249,8 @@ it('reads the IMAP folders oldest first, from the message after the cursor', fun
         ->and($calls)->toContain('setFetchOrderAsc')
         ->and(array_search('setFetchOrderAsc', $calls, true))->toBeLessThan(array_search('limit', $calls, true))
         ->and($calls)->toContain('uid')->not->toContain('since')
+        ->and($arguments_of['uid'])->toBe([42, INF])
+        ->and($arguments_of['limit'])->toBe([10])
         ->and($cache->get('sales-crm:imap:'.md5('imap.example.test|imap.example.test|INBOX')))->toBe(42);
 });
 
@@ -383,11 +387,13 @@ it('closes as not sent an email the host vetoed or whose delivery stopped halfwa
 
 it('reads the IMAP folder from the last days again when its UIDVALIDITY changes', function () {
     $calls = [];
+    $arguments_of = [];
     $query = Mockery::mock(MessageQueryInterface::class);
 
     foreach (['withHeaders', 'withBody', 'leaveUnread', 'setFetchOrderAsc', 'uid', 'since', 'limit'] as $method) {
-        $query->shouldReceive($method)->andReturnUsing(function (...$arguments) use ($method, &$calls, $query) {
+        $query->shouldReceive($method)->andReturnUsing(function (...$arguments) use ($method, &$calls, &$arguments_of, $query) {
             $calls[] = $method;
+            $arguments_of[$method] = $arguments;
 
             return $query;
         });
@@ -410,6 +416,7 @@ it('reads the IMAP folder from the last days again when its UIDVALIDITY changes'
 
     iterator_to_array((new ImapDriver($mailbox, $cache, ['INBOX'], [], 10))->fetch(), false);
     expect($calls)->toContain('since')->not->toContain('uid')
+        ->and($arguments_of['since'][0]->toDateString())->toBe(now()->subDays(2)->toDateString())
         ->and($cache->get($key))->toBeNull()
         ->and($cache->get($key.':validity'))->toBe('7');
 

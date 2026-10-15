@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Models\Deal;
+use Sellinnate\SalesCrm\Support\Crm;
 
 function enableApi(): void
 {
@@ -83,4 +84,17 @@ it('keeps every route of the API within the workspaces of the user', function ()
 
     Gate::define('sales-crm.access', fn ($user): bool => ! $user->is($bob));
     $this->actingAs($bob)->getJson('/api/crm/deals')->assertForbidden();
+});
+
+it('answers an owner that cannot be a user key with nothing found or a validation error, on every database', function () {
+    enableApi();
+    SalesCrm::shared()->createDeal(['title' => 'Owned'], $this->seller);
+
+    $this->actingAs($this->seller)->getJson('/api/crm/deals?owner_id=abc')->assertOk()->assertJsonPath('meta.total', 0);
+    $this->actingAs($this->seller)->postJson('/api/crm/deals', ['title' => 'Bad owner', 'owner_id' => 'abc'])->assertUnprocessable();
+
+    expect(Crm::isUserKey('42'))->toBeTrue()
+        ->and(Crm::isUserKey('abc'))->toBeFalse()
+        ->and(Crm::isUserKey(''))->toBeFalse()
+        ->and(Crm::isUserKey(7))->toBeTrue();
 });

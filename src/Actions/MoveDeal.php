@@ -128,7 +128,12 @@ class MoveDeal
             if ($changesStage) {
                 $outcome = $this->history->moved($locked, $from, $stage, $by, $now);
                 $this->completions->onEnter($locked, $stage);
+            }
 
+            // The next activity and the last contact were written on another instance (the activities).
+            $locked->refresh();
+
+            if ($changesStage) {
                 DealStageChanged::dispatch($locked, $from, $stage, $by);
 
                 match ($outcome) {

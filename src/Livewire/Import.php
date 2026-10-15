@@ -159,10 +159,20 @@ class Import extends Component
     {
         $import = $this->import();
 
-        if ($import !== null && in_array($import->status, [ImportStatus::Uploaded, ImportStatus::Mapped], true)) {
-            $import->forceFill(['sheet' => $this->sheet, 'mapping' => null])->save();
-            $this->loadMapping($import->fresh() ?? $import);
+        if ($import === null) {
+            return;
         }
+
+        try {
+            $import = app(ManageImports::class)->sheet($import, $this->sheet, $this->viewer());
+        } catch (ValidationException $exception) {
+            $this->showErrors($exception, 'mapping.');
+            $this->sheet = (string) $import->sheet;
+
+            return;
+        }
+
+        $this->loadMapping($import);
     }
 
     private function suggestStageValues(): void
@@ -319,7 +329,11 @@ class Import extends Component
     #[Computed]
     public function recent(): Collection
     {
-        return ImportModel::query()->visibleTo($this->viewer())->latest('id')->limit(10)->get();
+        // Only the imports the user may open: those of the workspaces they manage.
+        return ImportModel::query()->visibleTo($this->viewer())->latest('id')->limit(50)->get()
+            ->filter(fn (ImportModel $import): bool => $this->canManage($import->workspaceRef()))
+            ->take(10)
+            ->values();
     }
 
     /**

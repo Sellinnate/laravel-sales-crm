@@ -18,7 +18,7 @@ return [
         'quote' => 'Preventivo', 'contract' => 'Contratto', 'signature_evidence' => 'Evidenza di firma',
         'payment_evidence' => 'Evidenza di incasso', 'other' => 'Altro',
     ],
-    'import_status' => ['uploaded' => 'Caricato', 'mapped' => 'Pronto', 'running' => 'In corso', 'done' => 'Completato', 'failed' => 'Non riuscito'],
+    'import_status' => ['uploaded' => 'Caricato', 'mapped' => 'Pronto', 'queued' => 'In attesa', 'running' => 'In corso', 'done' => 'Completato', 'failed' => 'Non riuscito'],
     'lost_reason' => [
         'price' => 'Prezzo', 'timing' => 'Tempistiche', 'competitor' => 'Concorrente', 'no_response' => 'Nessuna risposta',
         'no_budget' => 'Nessun budget', 'not_in_target' => 'Non in target', 'postponed' => 'Rinviata', 'other' => 'Altro',
