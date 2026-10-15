@@ -125,8 +125,9 @@ class DealPanel extends Component
     {
         $this->dealId = $dealId;
         $this->page = $page;
+        // Refused (403) rather than not found when the deal exists but isn't the user's to see.
+        Gate::forUser($this->viewer())->authorize('view', Deal::query()->findOrFail($dealId));
         $deal = $this->deal();
-        Gate::forUser($this->viewer())->authorize('view', $deal);
 
         $this->loadForm($deal);
         $this->resetActivity();
