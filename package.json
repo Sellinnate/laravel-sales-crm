@@ -20,7 +20,7 @@
   },
   "homepage": "https://laravel-sales-crm.selli.io",
   "dependencies": {
-    "@mgks/docmd": "^0.8.8"
+    "@mgks/docmd": "^0.9.7"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.0",
