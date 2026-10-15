@@ -11,7 +11,9 @@ use Sellinnate\SalesCrm\Data\InboundEmail;
 interface InboundDriver
 {
     /**
-     * The emails not read yet. The driver keeps its own cursor: an email is returned once.
+     * The emails not read yet. The driver keeps its own cursor and moves it past an email only when
+     * the next one is asked for (a generator resuming after `yield`): polling stops at an email that
+     * could not be stored, which is then returned again by the next poll.
      *
      * @return iterable<InboundEmail>
      */

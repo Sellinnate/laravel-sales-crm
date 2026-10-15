@@ -232,6 +232,14 @@ it('reads the IMAP folders oldest first, from the message after the cursor', fun
 
     $cache = app('cache')->store();
     $cache->forever('sales-crm:imap:'.md5('imap.example.test|imap.example.test|INBOX'), 41);
+
+    // Polling stopped at the email (it could not be stored): the cursor stays before it.
+    foreach ((new ImapDriver($mailbox, $cache, ['INBOX'], [], 10))->fetch() as $email) {
+        break;
+    }
+    expect($cache->get('sales-crm:imap:'.md5('imap.example.test|imap.example.test|INBOX')))->toBe(41);
+
+    $calls = [];
     $emails = iterator_to_array((new ImapDriver($mailbox, $cache, ['INBOX'], [], 10))->fetch(), false);
 
     expect($emails)->toHaveCount(1)
@@ -261,4 +269,59 @@ it('asks the sender to retry a webhook batch when an email could not be stored',
 
     expect(Email::query()->where('message_id', 'r-1@acme.example')->count())->toBe(1)
         ->and(Email::query()->where('message_id', 'r-2@acme.example')->count())->toBe(1);
+});
+
+it('stores as outbound the reply a user writes from their own client in a thread of the deal', function () {
+    Mail::fake();
+    $sent = SalesCrm::sendEmail($this->deal, ['to' => 'jane@acme.example', 'subject' => 'Offer', 'body' => 'Here it is'], $this->seller);
+
+    $stored = SalesCrm::inbound()->receive(InboundEmail::fromArray([
+        'message_id' => '<follow-up-1@vendor.example>',
+        'from' => 'sam@vendor.example',
+        'to' => ['jane@acme.example'],
+        'subject' => 'Re: Offer',
+        'text' => 'Any news?',
+        'in_reply_to' => '<'.$sent->message_id.'>',
+    ]));
+
+    expect($stored?->deal_id)->toBe($this->deal->id)
+        ->and($stored?->direction->value)->toBe('out')
+        ->and($stored?->status)->toBe(EmailStatus::Sent)
+        ->and($stored?->sent_by)->toBe($this->seller->id);
+});
+
+it('stops polling at an email it cannot store, which the driver returns again at the next poll', function () {
+    $emails = [
+        InboundEmail::fromArray(['message_id' => 'p-1@acme.example', 'from' => 'jane@acme.example', 'subject' => 'One', 'text' => 'Hello']),
+        InboundEmail::fromArray(['message_id' => 'p-2@acme.example', 'from' => 'jane@acme.example', 'subject' => 'Two', 'text' => 'Hello']),
+    ];
+    $driver = new class($emails) implements InboundDriver
+    {
+        public int $cursor = 0;
+
+        public function __construct(private array $emails) {}
+
+        public function fetch(): iterable
+        {
+            foreach (array_slice($this->emails, $this->cursor) as $email) {
+                yield $email;
+                $this->cursor++;
+            }
+        }
+    };
+    SalesCrm::inbound()->drivers()->extend('flaky', fn () => $driver);
+    $fail = true;
+    Event::listen(EmailReceived::class, function (EmailReceived $event) use (&$fail): void {
+        if ($fail && $event->email->message_id === 'p-1@acme.example') {
+            throw new RuntimeException('Deadlock');
+        }
+    });
+
+    $this->artisan('sales-crm:poll-inbox', ['--driver' => 'flaky'])->assertFailed();
+    expect($driver->cursor)->toBe(0)->and(Email::query()->where('message_id', 'p-2@acme.example')->exists())->toBeFalse();
+
+    $fail = false;
+    $this->artisan('sales-crm:poll-inbox', ['--driver' => 'flaky'])->expectsOutputToContain('2 email(s) read')->assertSuccessful();
+    expect($driver->cursor)->toBe(2)
+        ->and(Email::query()->whereIn('message_id', ['p-1@acme.example', 'p-2@acme.example'])->count())->toBe(2);
 });

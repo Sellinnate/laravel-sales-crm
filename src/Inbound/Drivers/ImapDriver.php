@@ -47,13 +47,21 @@ class ImapDriver implements InboundDriver
             $last = is_numeric($cursor) ? (int) $cursor : 0;
 
             foreach ($query->limit($this->batch)->get() as $message) {
-                $last = max($last, $message->uid());
-
                 try {
-                    yield self::toInbound($message);
-                } finally {
-                    $this->cache->forever($key, $last);
+                    $email = self::toInbound($message);
+                } catch (Throwable $exception) {
+                    // A message that can't be read never will be: skipped, not retried forever.
+                    report($exception);
+                    $email = null;
                 }
+
+                if ($email !== null) {
+                    yield $email;
+                }
+
+                // Reached only when the next email is asked for: this one was handled.
+                $last = max($last, $message->uid());
+                $this->cache->forever($key, $last);
             }
         }
     }

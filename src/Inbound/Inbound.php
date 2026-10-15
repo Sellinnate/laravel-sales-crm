@@ -27,14 +27,15 @@ class Inbound
     }
 
     /**
-     * Read the new emails of the configured driver.
+     * Read the new emails of the configured driver, up to the first one that can't be stored.
      *
-     * @return array{read: int, stored: int}
+     * @return array{read: int, stored: int, failed: int}
      */
     public function poll(?string $driver = null): array
     {
         $read = 0;
         $stored = 0;
+        $failed = 0;
 
         foreach ($this->manager->driver($driver)->fetch() as $email) {
             $read++;
@@ -42,12 +43,16 @@ class Inbound
             try {
                 $stored += $this->receive($email) === null ? 0 : 1;
             } catch (Throwable $exception) {
-                // One broken email never stops the others; its text is never logged.
+                // Stopped here, the driver doesn't move its cursor past this email: the next poll
+                // reads it again (a deadlock, the database away). Its text is never logged.
                 report($exception);
+                $failed++;
+
+                break;
             }
         }
 
-        return ['read' => $read, 'stored' => $stored];
+        return ['read' => $read, 'stored' => $stored, 'failed' => $failed];
     }
 
     public function drivers(): InboundManager

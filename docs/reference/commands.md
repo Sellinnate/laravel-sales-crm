@@ -78,8 +78,11 @@ php artisan sales-crm:poll-inbox [--driver=imap]
 |---|---|
 | `--driver=` | The driver to poll. Default: `sales-crm.email.inbound.driver`. Built-in: `null`, `imap`, `webhook` (push-based, polling reads nothing), plus any driver you registered with `extend()`. |
 
-Output: `N email(s) read, M stored on the CRM.` One broken email never stops
-the others (it's reported to your error handler).
+Output: `N email(s) read, M stored on the CRM.` When an email can't be stored
+(a deadlock, the database away) polling stops there, the error goes to your
+error handler and the command exits with a failure: the driver hasn't moved its
+cursor past that email, so the next run reads it again. A message the IMAP
+driver can't even parse is reported and skipped.
 
 **Schedule it** when you use a polling driver (IMAP or a custom one):
 

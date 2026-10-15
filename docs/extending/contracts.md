@@ -364,6 +364,10 @@ Schedule::command('sales-crm:poll-inbox')->everyFiveMinutes()->withoutOverlappin
 
 You can also poll one driver explicitly: `php artisan sales-crm:poll-inbox --driver=acme-mail`.
 
+Move the cursor **after** the `yield`, as above: the code after `yield` runs
+only when the CRM asks for the next email, so when an email can't be stored the
+poll stops and your cursor still points before it.
+
 Pass the auto-reply headers (`Auto-Submitted`, `Precedence`, …) in `headers`,
 lowercased keys: the CRM uses them to drop out-of-office replies. Returning an
 email twice is harmless (it's de-duplicated by Message-ID), but a proper cursor

@@ -51,11 +51,10 @@ class HandleInboundEmail
         $messageId = MessageId::normalize($email->messageId);
         $messageId = $messageId !== null && strlen($messageId) <= self::MAX_ID ? $messageId : self::syntheticId($email);
         $threads = $this->threads($email, $workspace);
-        $outbound = false;
+        // Written by a user from their own client (a sent folder, the BCC dropbox), in a thread or not.
+        $outbound = $this->senderIsUser($email);
 
         if ($threads === []) {
-            $sender = $this->senderIsUser($email);
-            $outbound = $sender;
             $people = $this->people($email, $workspace, $outbound);
             // The same person in more workspaces says nothing of whose matter it is: not kept.
             $targets = count($people) === 1 ? $people : [];

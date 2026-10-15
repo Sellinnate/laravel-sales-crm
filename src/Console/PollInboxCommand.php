@@ -22,6 +22,12 @@ class PollInboxCommand extends Command
 
         $this->components->info($result['read'].' email(s) read, '.$result['stored'].' stored on the CRM.');
 
+        if ($result['failed'] > 0) {
+            $this->components->warn('An email could not be stored: it is read again at the next poll.');
+
+            return self::FAILURE;
+        }
+
         return self::SUCCESS;
     }
 }
