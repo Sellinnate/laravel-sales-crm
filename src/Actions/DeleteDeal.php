@@ -28,8 +28,12 @@ class DeleteDeal
         Crm::db()->transaction(function () use ($deal, $by): void {
             $attributes = $deal->attributesToArray();
 
-            // Locked as an upload locks it: a document uploaded meanwhile is purged too, or waits.
-            Deal::query()->whereKey($deal->id)->lockForUpdate()->first();
+            // Locked as an upload locks it: a document uploaded meanwhile is purged too, or waits. Gone
+            // already (a double click, two tabs): nothing to delete, nothing to announce again.
+            if (Deal::query()->whereKey($deal->id)->lockForUpdate()->first() === null) {
+                return;
+            }
+
             $this->documents->purgeWith($deal);
             $deal->delete();
             $this->positions->touch($deal->pipeline_id);

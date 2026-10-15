@@ -59,7 +59,9 @@ class MoveDeal
         }
 
         $completions = DealCompletions::extract($fill);
-        $fill = array_diff_key($fill, array_flip(['pipeline_id', 'stage_id', 'workspace_type', 'workspace_id']));
+        // Only what a stage may ask for (and the reason of a loss): any other change goes through
+        // UpdateDeal, with its rules and events (an approval decided, for one).
+        $fill = array_intersect_key($fill, array_flip(DealRequirements::fillKeys(RequiredField::cases(), true)));
         $validated = $this->fields->validate($deal->workspaceRef(), $fill, $deal);
 
         $move = fn (): Deal => $this->positions->locked($deal->pipeline_id, fn (): Deal => Crm::db()->transaction(function () use ($deal, $stage, $by, $validated, $completions, $afterId): Deal {
@@ -115,10 +117,12 @@ class MoveDeal
                 }
             }
 
-            $this->completions->write($locked, $completions, $by, $validated['offer_valid_until'] ?? $locked->offer_valid_until?->toDateString());
-
+            // The cards of the column first, the row of the pipeline last (touch(), also in the
+            // completions): in the order of the other changes of a card, so they never deadlock.
             $locked->setRelation('stage', $stage);
             $this->positions->place($locked, $afterId);
+
+            $this->completions->write($locked, $completions, $by, $validated['offer_valid_until'] ?? $locked->offer_valid_until?->toDateString());
             $this->positions->touch($locked->pipeline_id);
 
             if ($changesStage) {

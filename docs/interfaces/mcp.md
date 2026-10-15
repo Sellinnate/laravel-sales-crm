@@ -133,7 +133,7 @@ fields, the error lists them.
 | Argument | Type | |
 |---|---|---|
 | `title` | string ≤ 200 | **required** |
-| `workspace` | string | Workspace key (`"type\|id"`). When workspaces are on and neither this nor `pipeline_id` is given, the user's first workspace is used. |
+| `workspace` | string | Workspace key (`"type\|id"`). When workspaces are on and neither this nor `pipeline_id` is given, the user's only workspace is used; a user of several workspaces gets an error asking for it. |
 | `pipeline_id`, `stage_id` | integer | |
 | `company_name` | string ≤ 200 | |
 | `company_vat` | string ≤ 32 | VAT number, to match the company or give it to a new one |

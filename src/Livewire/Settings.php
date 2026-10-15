@@ -95,6 +95,11 @@ class Settings extends Component
 
     public function updatedWorkspace(): void
     {
+        // As on mount: a key the user doesn't work in never shows the settings of the shared CRM.
+        if ($this->access()->resolver()->enabled() && $this->scope() === null) {
+            $this->workspace = (string) array_key_first($this->workspaceOptions());
+        }
+
         $this->pipeline = '';
         unset($this->pipelines, $this->currentPipeline, $this->templates);
         $this->loadWorkspace();

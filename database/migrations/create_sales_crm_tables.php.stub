@@ -79,7 +79,7 @@ return new class extends Migration
         Schema::create($t('people'), function (Blueprint $table) use ($t): void {
             $table->id();
             Columns::workspace($table);
-            $table->foreignId('company_id')->nullable()->constrained($t('companies'))->nullOnDelete();
+            $table->foreignId('company_id')->nullable()->index()->constrained($t('companies'))->nullOnDelete();
             $table->string('first_name', 120)->nullable();
             $table->string('last_name', 120)->nullable();
             $table->string('job_title', 160)->nullable();
@@ -101,10 +101,10 @@ return new class extends Migration
             Columns::workspace($table, key: true);
             $table->foreignId('pipeline_id')->constrained($t('pipelines'))->cascadeOnDelete();
             // NO ACTION: a stage with deals is never deleted on its own.
-            $table->foreignId('stage_id')->constrained($t('stages'));
+            $table->foreignId('stage_id')->index()->constrained($t('stages'));
             $table->unsignedInteger('position')->default(0);
             $table->string('title', 200);
-            $table->foreignId('company_id')->nullable()->constrained($t('companies'))->nullOnDelete();
+            $table->foreignId('company_id')->nullable()->index()->constrained($t('companies'))->nullOnDelete();
             Columns::user($table, 'owner_id');
             $table->string('priority', 16)->nullable();
             $table->json('tags')->nullable();
@@ -196,7 +196,7 @@ return new class extends Migration
         Schema::create($t('stage_visits'), function (Blueprint $table) use ($t): void {
             $table->id();
             $table->foreignId('deal_id')->constrained($t('deals'))->cascadeOnDelete();
-            $table->foreignId('pipeline_id')->constrained($t('pipelines'))->cascadeOnDelete();
+            $table->foreignId('pipeline_id')->index()->constrained($t('pipelines'))->cascadeOnDelete();
             // A stage deleted later keeps its visits, with its name, for the time spent in it.
             $table->foreignId('stage_id')->nullable()->constrained($t('stages'))->nullOnDelete();
             $table->string('stage_name', 120)->nullable();
@@ -224,7 +224,7 @@ return new class extends Migration
         Schema::create($t('workspace_settings'), function (Blueprint $table) use ($t): void {
             $table->id();
             Columns::workspace($table, key: true);
-            $table->foreignId('entry_stage_id')->nullable()->constrained($t('stages'))->nullOnDelete();
+            $table->foreignId('entry_stage_id')->nullable()->index()->constrained($t('stages'))->nullOnDelete();
             $table->json('custom_fields')->nullable();
             $table->json('options')->nullable();
             Columns::user($table, 'updated_by');
@@ -237,9 +237,9 @@ return new class extends Migration
             $table->id();
             Columns::workspace($table);
             $table->foreignId('deal_id')->nullable()->constrained($t('deals'))->cascadeOnDelete();
-            $table->foreignId('company_id')->nullable()->constrained($t('companies'))->cascadeOnDelete();
+            $table->foreignId('company_id')->nullable()->index()->constrained($t('companies'))->cascadeOnDelete();
             // The person an activity is on, or the person a deal activity is with.
-            $table->foreignId('person_id')->nullable()->constrained($t('people'))->nullOnDelete();
+            $table->foreignId('person_id')->nullable()->index()->constrained($t('people'))->nullOnDelete();
             $table->string('type', 16);
             $table->string('title', 200);
             $table->text('notes')->nullable();
@@ -263,8 +263,8 @@ return new class extends Migration
             $table->id();
             Columns::workspace($table);
             $table->foreignId('deal_id')->nullable()->constrained($t('deals'))->cascadeOnDelete();
-            $table->foreignId('company_id')->nullable()->constrained($t('companies'))->cascadeOnDelete();
-            $table->foreignId('person_id')->nullable()->constrained($t('people'))->cascadeOnDelete();
+            $table->foreignId('company_id')->nullable()->index()->constrained($t('companies'))->cascadeOnDelete();
+            $table->foreignId('person_id')->nullable()->index()->constrained($t('people'))->cascadeOnDelete();
             Columns::user($table, 'user_id');
             $table->text('body');
             $table->json('mentions')->nullable();
@@ -278,7 +278,7 @@ return new class extends Migration
             $table->id();
             Columns::workspace($table);
             $table->foreignId('deal_id')->nullable()->constrained($t('deals'))->cascadeOnDelete();
-            $table->foreignId('company_id')->nullable()->constrained($t('companies'))->cascadeOnDelete();
+            $table->foreignId('company_id')->nullable()->index()->constrained($t('companies'))->cascadeOnDelete();
             $table->string('kind', 24);
             $table->string('name', 255);
             $table->string('disk', 64);
@@ -351,7 +351,7 @@ return new class extends Migration
             $table->id();
             Columns::workspace($table);
             Columns::user($table, 'user_id');
-            $table->foreignId('pipeline_id')->nullable()->constrained($t('pipelines'))->nullOnDelete();
+            $table->foreignId('pipeline_id')->nullable()->index()->constrained($t('pipelines'))->nullOnDelete();
             $table->string('original_filename', 255);
             $table->string('disk', 64);
             $table->string('stored_path', 255);

@@ -62,7 +62,7 @@ class Companies extends Component
     {
         $this->resetErrorBag();
         $this->duplicate = null;
-        $this->draft = ['workspace' => $this->workspace, 'name' => '', 'vat_number' => '', 'website' => '', 'email' => '', 'phone' => '', 'city' => '', 'industry' => ''];
+        $this->draft = ['workspace' => $this->draftWorkspace(), 'name' => '', 'vat_number' => '', 'website' => '', 'email' => '', 'phone' => '', 'city' => '', 'industry' => ''];
         $this->showCreate = true;
     }
 

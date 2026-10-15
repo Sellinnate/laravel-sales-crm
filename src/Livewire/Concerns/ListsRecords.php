@@ -13,6 +13,19 @@ trait ListsRecords
      * The workspace a new record goes in: the one of the filter, else the first of the user (null in
      * the shared CRM).
      */
+    /**
+     * The workspace a new record starts in: the one of the filter, else the first one the form shows,
+     * so what the select shows is where the record goes.
+     */
+    protected function draftWorkspace(): string
+    {
+        if (! $this->access()->resolver()->enabled() || $this->workspaceFromKey($this->workspace) !== null) {
+            return $this->workspace;
+        }
+
+        return (string) array_key_first($this->workspaceOptions());
+    }
+
     protected function targetWorkspace(): ?Workspace
     {
         if (! $this->access()->resolver()->enabled()) {

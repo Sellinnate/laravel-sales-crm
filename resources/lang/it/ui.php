@@ -7,6 +7,8 @@ return [
     'call' => 'Chiamata',
     'call_with' => 'Chiamata con :name',
     'email_failed' => 'Invio non riuscito: riprova o avvisa l\'assistenza.',
+    'email_unknown' => 'Invio interrotto: potrebbe non essere partita. Verifica con il destinatario prima di reinviarla.',
+    'email_vetoed' => 'Non inviata: l\'applicazione ha bloccato questa email.',
     'no_subject' => '(senza oggetto)',
 
     'navigation' => 'Navigazione del CRM',
@@ -117,6 +119,7 @@ return [
     'note_added' => 'Nota aggiunta.',
     'no_reminder' => 'Nessun promemoria',
     'reminder' => ['0' => 'All\'ora', '15' => '15 minuti prima', '60' => '1 ora prima', '1440' => '1 giorno prima'],
+    'reminder_before' => ':time prima',
     'activity_saved' => 'Attività salvata.',
     'activity_done' => 'Attività completata.',
     'mark_done' => 'Segna come fatta',

@@ -63,7 +63,6 @@ return [
         'resolver' => SingleWorkspaceResolver::class,
 
         // RelationWorkspaceResolver only.
-        'model' => null,                 // e.g. App\Models\Team::class
         'user_relation' => null,         // relation/method on the user returning their workspaces, e.g. 'teams'
         'members_relation' => null,      // relation on the workspace returning its users, e.g. 'users'
         'label_attribute' => 'name',

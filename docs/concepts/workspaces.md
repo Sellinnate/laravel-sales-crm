@@ -79,7 +79,6 @@ configure:
 // config/sales-crm.php
 'workspaces' => [
     'resolver'         => Sellinnate\SalesCrm\Workspaces\RelationWorkspaceResolver::class,
-    'model'            => App\Models\Team::class,
     'user_relation'    => 'teams',   // $user->teams(): the workspaces of a user
     'members_relation' => 'users',   // $team->users(): the users of a workspace
     'label_attribute'  => 'name',    // shown in the workspace selector

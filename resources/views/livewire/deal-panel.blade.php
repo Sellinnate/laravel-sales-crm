@@ -124,7 +124,7 @@
             <x-sales-crm::field :label="__('sales-crm::fields.activity.remind_minutes')">
                 <select class="crm-select" wire:model="activity.remind_minutes">
                     <option value="">{{ __('sales-crm::ui.no_reminder') }}</option>
-                    @foreach (ManageActivities::reminderOptions() as $minutes)<option value="{{ $minutes }}">{{ __('sales-crm::ui.reminder.'.$minutes) }}</option>@endforeach
+                    @foreach (ManageActivities::reminderOptions() as $minutes)<option value="{{ $minutes }}">{{ ManageActivities::reminderLabel($minutes) }}</option>@endforeach
                 </select>
             </x-sales-crm::field>
             <x-sales-crm::field :label="__('sales-crm::fields.activity.assigned_to')" error="activity.assigned_to">

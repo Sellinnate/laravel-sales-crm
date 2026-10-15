@@ -300,3 +300,22 @@ it('computes the derived state of a deal', function () {
         ->and($deal->nextActivityState())->toBe('none')
         ->and($deal->weightedCents())->toBe(10000);
 });
+
+it('takes from the fill of a move only what a stage may ask for', function () {
+    $deal = SalesCrm::shared()->createDeal(['title' => 'Fill me', 'amount_once' => 900], $this->seller);
+    $before = $deal->fresh()->approval_status;
+
+    SalesCrm::moveDeal($deal, crmStage($deal->pipeline, 'Proposal sent'), $this->seller, fill: [
+        'offer_valid_until' => '2030-01-31',
+        'next_step' => 'Sneaked in',
+        'approval_status' => 'approved',
+        'title' => 'Renamed',
+    ]);
+
+    $deal = $deal->fresh();
+    expect($deal->stage->name)->toBe('Proposal sent')
+        ->and($deal->offer_valid_until?->toDateString())->toBe('2030-01-31')
+        ->and($deal->next_step)->toBeNull()
+        ->and($deal->title)->toBe('Fill me')
+        ->and($deal->approval_status)->toBe($before);
+});

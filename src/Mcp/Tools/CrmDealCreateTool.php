@@ -49,7 +49,15 @@ class CrmDealCreateTool extends CrmTool
         if (isset($data['pipeline_id'])) {
             $workspace = Pipeline::query()->visibleTo($user)->findOrFail((int) $data['pipeline_id'])->workspaceRef();
         } elseif ($access->resolver()->enabled()) {
-            $workspace = Workspace::fromKey(is_string($data['workspace'] ?? null) ? $data['workspace'] : null) ?? ($access->workspacesFor($user)[0] ?? null);
+            $workspace = Workspace::fromKey(is_string($data['workspace'] ?? null) ? $data['workspace'] : null);
+            $workspaces = $access->workspacesFor($user);
+
+            // A missing or malformed key never picks one of several workspaces for the user.
+            if ($workspace === null && count($workspaces) !== 1) {
+                return Response::error('Give the workspace ("type|id", see crm_pipelines) or a pipeline_id: you work in '.count($workspaces).' workspaces.');
+            }
+
+            $workspace ??= $workspaces[0];
         }
 
         unset($data['workspace']);

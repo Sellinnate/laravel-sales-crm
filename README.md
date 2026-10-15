@@ -195,7 +195,6 @@ To split the CRM by team, point the relation resolver at your models:
 // config/sales-crm.php
 'workspaces' => [
     'resolver' => \Sellinnate\SalesCrm\Workspaces\RelationWorkspaceResolver::class,
-    'model' => App\Models\Team::class,
     'user_relation' => 'teams',
     'members_relation' => 'users',
 ],

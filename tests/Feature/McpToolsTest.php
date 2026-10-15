@@ -14,6 +14,7 @@ use Sellinnate\SalesCrm\Mcp\Tools\CrmDealUpdateTool;
 use Sellinnate\SalesCrm\Mcp\Tools\CrmNoteAddTool;
 use Sellinnate\SalesCrm\Mcp\Tools\CrmPipelinesTool;
 use Sellinnate\SalesCrm\Models\Deal;
+use Sellinnate\SalesCrm\Workspaces\Workspace;
 
 beforeEach(function () {
     $this->seller = crmUser(['name' => 'Sam Seller']);
@@ -114,4 +115,19 @@ it('refuses every write tool on a deal of another workspace, leaving it as it wa
         ->and($foreign->notes()->count())->toBe(0)
         ->and($foreign->activities()->count())->toBe(0)
         ->and(Deal::query()->where('title', 'Intruder')->exists())->toBeFalse();
+});
+
+it('asks for the workspace of a new deal when the user works in several', function () {
+    useTeams();
+    $alpha = crmTeam('Alpha', $this->seller);
+    crmTeam('Beta', $this->seller);
+    app()->forgetScopedInstances();
+    $seller = $this->seller->fresh();
+
+    SalesCrmServer::actingAs($seller)->tool(CrmDealCreateTool::class, ['title' => 'Where?'])->assertHasErrors(['workspace']);
+    SalesCrmServer::actingAs($seller)->tool(CrmDealCreateTool::class, ['title' => 'Where?', 'workspace' => 'Alpha'])->assertHasErrors(['workspace']);
+    SalesCrmServer::actingAs($seller)->tool(CrmDealCreateTool::class, ['title' => 'Here', 'workspace' => Workspace::of($alpha)?->key()])->assertOk();
+
+    expect(Deal::query()->where('title', 'Where?')->exists())->toBeFalse()
+        ->and(Deal::query()->where('title', 'Here')->first()?->inWorkspace($alpha))->toBeTrue();
 });

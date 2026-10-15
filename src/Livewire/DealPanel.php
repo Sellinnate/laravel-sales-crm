@@ -160,8 +160,15 @@ class DealPanel extends Component
         return $this->deal();
     }
 
-    private function loadForm(Deal $deal): void
+    /**
+     * The form from the deal. With $keepEdits (after a move or an upload from the panel) the fields
+     * the user changed and hasn't saved yet stay as they were typed.
+     */
+    private function loadForm(Deal $deal, bool $keepEdits = false): void
     {
+        $edits = $keepEdits ? array_filter($this->form, fn (mixed $value, string $key): bool => $value !== ($this->original[$key] ?? null), ARRAY_FILTER_USE_BOTH) : [];
+        $customEdits = $keepEdits ? array_filter($this->custom, fn (mixed $value, string $key): bool => $value !== ($this->originalCustom[$key] ?? null), ARRAY_FILTER_USE_BOTH) : [];
+
         $cents = fn (?int $value): string => $value === null ? '' : rtrim(rtrim(number_format($value / 100, 2, '.', ''), '0'), '.');
 
         $this->form = [
@@ -214,6 +221,8 @@ class DealPanel extends Component
         }
 
         $this->originalCustom = $this->custom;
+        $this->form = [...$this->form, ...array_intersect_key($edits, $this->form)];
+        $this->custom = [...$this->custom, ...array_intersect_key($customEdits, $this->custom)];
     }
 
     /**
@@ -341,7 +350,7 @@ class DealPanel extends Component
 
     private function afterMove(): void
     {
-        $this->loadForm($this->deal());
+        $this->loadForm($this->deal(), keepEdits: true);
         $this->changed((string) __('sales-crm::ui.moved'));
     }
 
@@ -611,7 +620,7 @@ class DealPanel extends Component
         $this->upload = null;
         $this->document = [];
         $this->action = '';
-        $this->loadForm($this->deal());
+        $this->loadForm($this->deal(), keepEdits: true);
         $this->changed((string) __('sales-crm::ui.document_uploaded'));
     }
 

@@ -49,9 +49,11 @@ $email->status;   // EmailStatus::Queued
   mailer, so a retry never sends it twice; if the mailer refuses it, it goes
   back to **queued** for the next attempt. On success it becomes **sent**,
   fires `EmailSent` and updates the deal's last contact; after the last failure
-  it becomes **failed** and fires `EmailFailed`. An email the mailer accepted
-  but that couldn't be recorded as sent (the database away) stays **sending**:
-  it left, and it is not sent again.
+  it becomes **failed** and fires `EmailFailed`. An email a listener of your app
+  vetoes (`MessageSending` answering `false`) becomes **failed** with that
+  reason. An email still **sending** when the job runs again (the worker was
+  killed during the SMTP conversation) is closed as **failed** with "delivery
+  interrupted": it may or may not have left, and it is never sent twice.
 - Every email gets its own `Message-ID`. With `reply_to_id` it also carries the
   `In-Reply-To` and `References` of that thread, so it shows up as a reply in
   the customer's mail client.

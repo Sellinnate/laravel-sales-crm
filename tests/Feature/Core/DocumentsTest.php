@@ -3,11 +3,14 @@
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
+use Sellinnate\SalesCrm\Actions\DeleteDeal;
 use Sellinnate\SalesCrm\Actions\ManageDocuments;
 use Sellinnate\SalesCrm\Actions\UpdateDeal;
+use Sellinnate\SalesCrm\Events\DealDeleted;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Models\Document;
 use Sellinnate\SalesCrm\Support\Crm;
@@ -85,4 +88,21 @@ it('keeps the file of a document whose deletion the host rolls back', function (
 
     expect(Document::query()->find($document->id))->not->toBeNull();
     Storage::disk('local')->assertExists($document->path);
+});
+
+it('stores a document with the extension of its content, keeping the name given', function () {
+    $pdf = UploadedFile::fake()->create('quote.html', 10, 'application/pdf');
+    $document = $this->documents->upload($this->deal, $pdf, ['kind' => 'quote'], $this->seller);
+
+    expect($document->path)->toEndWith('.pdf')->and($document->name)->toBe('quote.html');
+});
+
+it('deletes a deal once, announcing it once', function () {
+    Event::fake([DealDeleted::class]);
+    $stale = $this->deal->fresh();
+
+    app(DeleteDeal::class)->handle($this->deal, $this->admin);
+    app(DeleteDeal::class)->handle($stale, $this->admin);
+
+    Event::assertDispatchedTimes(DealDeleted::class, 1);
 });

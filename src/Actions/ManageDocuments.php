@@ -63,7 +63,9 @@ class ManageDocuments
         $kind = DocumentKind::from($validated['kind']);
         $disk = (string) config('sales-crm.documents.disk', 'local');
         $directory = trim((string) config('sales-crm.documents.directory', 'sales-crm'), '/').'/'.Str::slug($target->workspaceRef()?->key() ?? 'shared');
-        $path = $file->storeAs($directory, Str::uuid()->toString().'.'.Str::lower($file->getClientOriginalExtension() ?: 'bin'), ['disk' => $disk]);
+        // The extension of the content (checked by `mimes`), never the one of the name given by the
+        // browser: a PDF named x.html stays .pdf even on a public disk. The name is kept apart.
+        $path = $file->storeAs($directory, Str::uuid()->toString().'.'.Str::lower($file->guessExtension() ?? 'bin'), ['disk' => $disk]);
 
         if ($path === false) {
             throw new RuntimeException('sales-crm: the document could not be stored on the disk.');

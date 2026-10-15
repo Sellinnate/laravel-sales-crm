@@ -41,7 +41,6 @@ function useTeams(): void
 {
     config([
         'sales-crm.workspaces.resolver' => RelationWorkspaceResolver::class,
-        'sales-crm.workspaces.model' => Team::class,
         'sales-crm.workspaces.user_relation' => 'teams',
         'sales-crm.workspaces.members_relation' => 'users',
     ]);

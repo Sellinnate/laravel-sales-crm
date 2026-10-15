@@ -63,7 +63,7 @@ class People extends Component
     {
         $this->resetErrorBag();
         $this->duplicate = null;
-        $this->draft = ['workspace' => $this->workspace, 'first_name' => '', 'last_name' => '', 'email' => '', 'mobile' => '', 'job_title' => '', 'company_id' => ''];
+        $this->draft = ['workspace' => $this->draftWorkspace(), 'first_name' => '', 'last_name' => '', 'email' => '', 'mobile' => '', 'job_title' => '', 'company_id' => ''];
         $this->showCreate = true;
     }
 

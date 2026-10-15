@@ -82,7 +82,6 @@ public function scopeSalesTeam($query)
 'workspaces' => [
     'resolver'         => SingleWorkspaceResolver::class,
     // RelationWorkspaceResolver only:
-    'model'            => null,     // e.g. App\Models\Team::class
     'user_relation'    => null,     // e.g. 'teams'
     'members_relation' => null,     // e.g. 'users'
     'label_attribute'  => 'name',

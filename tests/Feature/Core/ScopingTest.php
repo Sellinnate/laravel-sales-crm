@@ -19,10 +19,12 @@ use Sellinnate\SalesCrm\Livewire\CompanyPage;
 use Sellinnate\SalesCrm\Livewire\DealPanel;
 use Sellinnate\SalesCrm\Livewire\Import as ImportPage;
 use Sellinnate\SalesCrm\Livewire\People;
+use Sellinnate\SalesCrm\Livewire\Settings;
 use Sellinnate\SalesCrm\Models\Activity;
 use Sellinnate\SalesCrm\Models\Company;
 use Sellinnate\SalesCrm\Models\Deal;
 use Sellinnate\SalesCrm\Models\Email;
+use Sellinnate\SalesCrm\Models\EmailTemplate;
 use Sellinnate\SalesCrm\Models\Import;
 use Sellinnate\SalesCrm\Models\Note;
 use Sellinnate\SalesCrm\Models\Person;
@@ -269,4 +271,29 @@ it('never creates pipelines from the import wizard where the user does not manag
     expect($wizard->instance()->pipelines)->toHaveCount(0)
         ->and(Pipeline::query()->count())->toBe($before)
         ->and(Pipeline::query()->whereNull('workspace_type')->exists())->toBeFalse();
+});
+
+it('creates a company in the workspace the form shows when no workspace is filtered', function () {
+    $zeta = crmTeam('Zeta', $this->alice);
+    $first = crmTeam('Aardvark', $this->alice);
+    app()->forgetScopedInstances();
+
+    $form = Livewire::actingAs($this->alice->fresh())->test(Companies::class)->call('startCreate');
+    expect($form->get('draft.workspace'))->toBe(Workspace::of($first)?->key());
+
+    $form->set('draft.name', 'Shown Ltd')->call('create');
+
+    expect(Company::query()->where('name', 'Shown Ltd')->first()?->inWorkspace($first))->toBeTrue()
+        ->and($zeta->exists)->toBeTrue();
+});
+
+it('never shows the settings of the shared CRM for a workspace key the user does not work in', function () {
+    // Left by the time the app had one shared CRM, before workspaces.
+    EmailTemplate::query()->forceCreate(['name' => 'Shared secret template', 'subject' => 'S', 'body' => 'B', 'workspace_key' => '']);
+    $alice = $this->alice->fresh();
+
+    Livewire::actingAs($alice)->test(Settings::class, ['tab' => 'templates'])
+        ->set('workspace', 'Workbench\App\Models\Team|999')
+        ->assertSet('workspace', Workspace::of($this->alpha)?->key())
+        ->assertDontSee('Shared secret template');
 });

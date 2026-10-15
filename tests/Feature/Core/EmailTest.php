@@ -6,6 +6,7 @@ use DirectoryTree\ImapEngine\FolderRepositoryInterface;
 use DirectoryTree\ImapEngine\MailboxInterface;
 use DirectoryTree\ImapEngine\MessageQueryInterface;
 use DirectoryTree\ImapEngine\Testing\FakeMessage;
+use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -349,8 +350,33 @@ it('never sends an email twice when recording it as sent fails', function () {
     });
 
     app()->call([new DeliverEmail($email->id), 'handle']);
+    expect($email->fresh()->status)->toBe(EmailStatus::Sending);
+
+    // Another attempt never sends it again: whether it left is unknown, so it is closed as not sent.
     app()->call([new DeliverEmail($email->id), 'handle']);
 
     Mail::assertSent(DealEmail::class, 1);
-    expect($email->fresh()->status)->toBe(EmailStatus::Sending);
+    expect($email->fresh()->status)->toBe(EmailStatus::Failed)
+        ->and($email->fresh()->error)->toBe(__('sales-crm::ui.email_unknown'));
+});
+
+it('closes as not sent an email the host vetoed or whose delivery stopped halfway', function () {
+    Event::fake([EmailFailed::class, EmailSent::class]);
+    config(['queue.default' => 'null']);
+    $vetoed = SalesCrm::sendEmail($this->deal, ['to' => 'jane@acme.example', 'subject' => 'Vetoed', 'body' => 'B'], $this->seller);
+    $stuck = SalesCrm::sendEmail($this->deal, ['to' => 'jane@acme.example', 'subject' => 'Stuck', 'body' => 'B'], $this->seller);
+
+    $veto = fn (MessageSending $event): bool => false;
+    Event::listen(MessageSending::class, $veto);
+    app()->call([new DeliverEmail($vetoed->id), 'handle']);
+
+    $stuck->forceFill(['status' => EmailStatus::Sending])->save();
+    app()->call([new DeliverEmail($stuck->id), 'handle']);
+
+    expect($vetoed->fresh()->status)->toBe(EmailStatus::Failed)
+        ->and($vetoed->fresh()->error)->toBe(__('sales-crm::ui.email_vetoed'))
+        ->and($stuck->fresh()->status)->toBe(EmailStatus::Failed)
+        ->and($stuck->fresh()->error)->toBe(__('sales-crm::ui.email_unknown'));
+    Event::assertDispatchedTimes(EmailFailed::class, 2);
+    Event::assertNotDispatched(EmailSent::class);
 });

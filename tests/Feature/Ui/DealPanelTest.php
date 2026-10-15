@@ -148,3 +148,25 @@ it('saves only the custom fields changed in the panel, leaving unknown yes/no fi
     $panel->set('custom.renewal', true)->call('save');
     expect($this->deal->fresh()->custom_values)->toBe(['seats' => 9, 'renewal' => true]);
 });
+
+it('keeps the fields typed and not saved yet when the deal moves from the panel', function () {
+    $qualified = crmStage($this->pipeline, 'Qualified');
+
+    Livewire::test(DealPanel::class, ['dealId' => $this->deal->id])
+        ->set('form.next_step', 'Typed, not saved')
+        ->call('moveTo', $qualified->id)
+        ->assertSet('form.next_step', 'Typed, not saved')
+        ->call('save');
+
+    expect($this->deal->fresh()->stage_id)->toBe($qualified->id)
+        ->and($this->deal->fresh()->next_step)->toBe('Typed, not saved');
+});
+
+it('labels the reminder options added in the config', function () {
+    config(['sales-crm.activities.reminder_options' => [0, 30, 10080]]);
+
+    Livewire::test(DealPanel::class, ['dealId' => $this->deal->id])
+        ->call('open', 'activity')
+        ->assertSee(['At the time', '30 minutes before', '1 week before'])
+        ->assertDontSee('sales-crm::ui.reminder');
+});

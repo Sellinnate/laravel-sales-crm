@@ -7,6 +7,8 @@ return [
     'call' => 'Call',
     'call_with' => 'Call with :name',
     'email_failed' => 'Delivery failed: try again or contact support.',
+    'email_unknown' => 'Delivery interrupted: it may not have left. Check with the recipient before sending it again.',
+    'email_vetoed' => 'Not sent: the application stopped this email.',
     'no_subject' => '(no subject)',
 
     'navigation' => 'CRM navigation',
@@ -120,6 +122,7 @@ return [
     'note_added' => 'Note added.',
     'no_reminder' => 'No reminder',
     'reminder' => ['0' => 'At the time', '15' => '15 minutes before', '60' => '1 hour before', '1440' => '1 day before'],
+    'reminder_before' => ':time before',
     'activity_saved' => 'Activity saved.',
     'activity_done' => 'Activity done.',
     'mark_done' => 'Mark as done',

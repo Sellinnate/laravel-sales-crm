@@ -15,7 +15,6 @@ use Sellinnate\SalesCrm\Support\Crm;
 /**
  * Workspaces read from the relations of the host models, configured in `sales-crm.workspaces`:
  *
- *     'model' => App\Models\Team::class,
  *     'user_relation' => 'teams',      // $user->teams: the workspaces of a user
  *     'members_relation' => 'users',   // $team->users(): the users of a workspace
  *

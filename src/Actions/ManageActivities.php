@@ -3,10 +3,12 @@
 namespace Sellinnate\SalesCrm\Actions;
 
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterval;
 use Closure;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -129,6 +131,15 @@ class ManageActivities
         Gate::forUser($by)->authorize('update', $activity);
 
         return Crm::db()->transaction(function () use ($activity, $outcome, $by): Activity {
+            // Read again under lock: done already (another tab, a double click, a retry), it stays as
+            // it was, with its outcome, and nothing is announced twice.
+            $current = Activity::query()->whereKey($activity->getKey())->lockForUpdate()->first();
+
+            if ($current === null || $current->done_at !== null) {
+                return $current ?? $activity;
+            }
+
+            $activity = $current;
             $now = CarbonImmutable::now();
 
             $activity->forceFill([
@@ -216,6 +227,16 @@ class ManageActivities
         $options = config('sales-crm.activities.reminder_options', [0, 15, 60, 1440]);
 
         return array_values(array_map(intval(...), is_array($options) ? $options : [0, 15, 60, 1440]));
+    }
+
+    /**
+     * The label of a reminder option: translated for the default ones, "3 hours before" for the others.
+     */
+    public static function reminderLabel(int $minutes): string
+    {
+        return Lang::has('sales-crm::ui.reminder.'.$minutes)
+            ? (string) __('sales-crm::ui.reminder.'.$minutes)
+            : (string) __('sales-crm::ui.reminder_before', ['time' => CarbonInterval::minutes($minutes)->cascade()->forHumans(['locale' => app()->getLocale()])]);
     }
 
     /**

@@ -158,3 +158,16 @@ it('keeps the assignee of an activity changed by someone else, unless asked to c
     $mine = $this->actions->save($this->deal, ['type' => 'task', 'title' => 'Mine', 'due_date' => CarbonImmutable::now()->addDay()->toDateString()], $this->seller);
     expect($unassigned->assigned_to)->toBeNull()->and($mine->assigned_to)->toBe($this->seller->id);
 });
+
+it('completes an activity once, keeping the first outcome', function () {
+    Event::fake([ActivityCompleted::class]);
+    $activity = $this->actions->save($this->deal, ['type' => 'call', 'title' => 'Call', 'due_date' => CarbonImmutable::now()->toDateString()], $this->seller);
+    $stale = $activity->fresh();
+
+    $this->actions->complete($activity, 'Interested, call back in March', $this->seller);
+    $again = $this->actions->complete($stale, null, $this->seller);
+
+    expect($again->outcome)->toBe('Interested, call back in March')
+        ->and($activity->fresh()->outcome)->toBe('Interested, call back in March');
+    Event::assertDispatchedTimes(ActivityCompleted::class, 1);
+});
