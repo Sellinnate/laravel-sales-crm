@@ -26,10 +26,10 @@ jobs:
           - laravel: 12.*
             testbench: 10.*
           - laravel: 11.*
-            testbench: 9.*
+            testbench: '^9.13'
           # PHP 8.2 runs Pest 3, whose Livewire plugin needs Livewire 3.
-          - { php: 8.2, laravel: 11.*, testbench: 9.*, stability: prefer-lowest, livewire: '^3.5' }
-          - { php: 8.2, laravel: 11.*, testbench: 9.*, stability: prefer-stable, livewire: '^3.5' }
+          - { php: 8.2, laravel: 11.*, testbench: '^9.13', stability: prefer-lowest, livewire: '^3.5' }
+          - { php: 8.2, laravel: 11.*, testbench: '^9.13', stability: prefer-stable, livewire: '^3.5' }
           - { php: 8.2, laravel: 12.*, testbench: 10.*, stability: prefer-lowest, livewire: '^3.5' }
           - { php: 8.2, laravel: 12.*, testbench: 10.*, stability: prefer-stable, livewire: '^3.5' }
           # Livewire 3 on a newer PHP too.
