@@ -18,8 +18,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Laravel 11 is past its end of life: Composer blocks its releases for open security
+          # advisories unless told otherwise. The package still supports it.
           - php: '8.2'
             laravel: '^11.0'
+            allow-insecure: true
           - php: '8.3'
             laravel: '^12.0'
           - php: '8.4'
@@ -37,6 +40,10 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, intl, fileinfo
           coverage: none
+
+      - name: Allow the releases with security advisories (end-of-life Laravel only)
+        if: matrix.allow-insecure
+        run: composer config --global policy.advisories.block false
 
       - name: Create a Laravel application
         run: composer create-project laravel/laravel app "${{ matrix.laravel }}" --prefer-dist --no-interaction

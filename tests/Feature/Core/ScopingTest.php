@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -9,6 +10,7 @@ use Sellinnate\SalesCrm\Actions\ManageActivities;
 use Sellinnate\SalesCrm\Actions\MoveDeal;
 use Sellinnate\SalesCrm\Actions\UpdateDeal;
 use Sellinnate\SalesCrm\Authorization\Access;
+use Sellinnate\SalesCrm\Data\InboundEmail;
 use Sellinnate\SalesCrm\Enums\ImportStatus;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Livewire\Agenda;
@@ -20,6 +22,7 @@ use Sellinnate\SalesCrm\Livewire\People;
 use Sellinnate\SalesCrm\Models\Activity;
 use Sellinnate\SalesCrm\Models\Company;
 use Sellinnate\SalesCrm\Models\Deal;
+use Sellinnate\SalesCrm\Models\Email;
 use Sellinnate\SalesCrm\Models\Import;
 use Sellinnate\SalesCrm\Models\Note;
 use Sellinnate\SalesCrm\Models\Person;
@@ -205,8 +208,13 @@ it('checks the access to a record on every request of an open page, not only on 
     $this->alice->unsetRelations();
     app()->forgetScopedInstances();
 
-    $panel->call('$refresh')->assertStatus(404);
-    $page->call('$refresh')->assertStatus(404);
+    // Livewire 4.1+ answers 404, earlier versions let the exception through.
+    foreach ([$panel, $page] as $component) {
+        try {
+            $component->call('$refresh')->assertStatus(404);
+        } catch (ModelNotFoundException) {
+        }
+    }
 });
 
 it('never shows the import of another workspace when the browser changes its id', function () {
@@ -230,4 +238,21 @@ it('returns the deal already born from a record only to a user who may see it', 
     expect(SalesCrm::for($this->beta)->createDealFrom($origin, ['title' => 'Again'])->is($deal))->toBeTrue()
         ->and(SalesCrm::for($this->beta)->createDealFrom($origin, ['title' => 'Again'], $this->bob)->is($deal))->toBeTrue()
         ->and(fn () => SalesCrm::for($this->beta)->createDealFrom($origin, ['title' => 'Again'], $this->alice))->toThrow(AuthorizationException::class);
+});
+
+it('never stores the email of a user in a workspace they do not work in', function () {
+    $bobPerson = $this->betaDeal->people->first();
+    $bobPerson->forceFill(['email' => 'only-beta@client.example'])->save();
+    $alice = $this->alice->forceFill(['email' => 'alice@vendor.example']);
+    $alice->save();
+
+    $bcc = SalesCrm::inbound()->receive(InboundEmail::fromArray(['message_id' => 'bcc-x@vendor.example', 'from' => 'alice@vendor.example', 'to' => ['only-beta@client.example'], 'subject' => 'Private', 'text' => 'Private']));
+
+    $sent = Email::query()->create(['deal_id' => $this->betaDeal->id, 'workspace_type' => $this->betaDeal->workspace_type, 'workspace_id' => $this->betaDeal->workspace_id, 'workspace_key' => Workspace::fromRecord($this->betaDeal)?->key() ?? '', 'direction' => 'out', 'status' => 'sent', 'message_id' => 'beta-thread@vendor.example', 'from_email' => 'bob@vendor.example', 'to' => ['only-beta@client.example'], 'subject' => 'Offer', 'body_text' => 'Offer']);
+    $reply = SalesCrm::inbound()->receive(InboundEmail::fromArray(['message_id' => 'reply-x@vendor.example', 'from' => 'alice@vendor.example', 'to' => ['only-beta@client.example'], 'subject' => 'Re: Offer', 'text' => 'Me too', 'in_reply_to' => '<beta-thread@vendor.example>']));
+
+    expect($bcc)->toBeNull()
+        ->and($reply)->toBeNull()
+        ->and(Email::query()->whereIn('message_id', ['bcc-x@vendor.example', 'reply-x@vendor.example'])->count())->toBe(0)
+        ->and($sent->exists)->toBeTrue();
 });

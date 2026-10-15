@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: [8.5, 8.4, 8.3, 8.2]
+        php: [8.5, 8.4, 8.3]
         laravel: [13.*, 12.*, 11.*]
         stability: [prefer-lowest, prefer-stable]
         livewire: ['^4.0']
@@ -27,20 +27,14 @@ jobs:
             testbench: 10.*
           - laravel: 11.*
             testbench: 9.*
-          # Livewire 3 on the oldest and the newest supported framework.
-          - php: 8.2
-            laravel: 11.*
-            testbench: 9.*
-            stability: prefer-stable
-            livewire: '^3.5'
-          - php: 8.4
-            laravel: 12.*
-            testbench: 10.*
-            stability: prefer-stable
-            livewire: '^3.5'
+          # PHP 8.2 runs Pest 3, whose Livewire plugin needs Livewire 3.
+          - { php: 8.2, laravel: 11.*, testbench: 9.*, stability: prefer-lowest, livewire: '^3.5' }
+          - { php: 8.2, laravel: 11.*, testbench: 9.*, stability: prefer-stable, livewire: '^3.5' }
+          - { php: 8.2, laravel: 12.*, testbench: 10.*, stability: prefer-lowest, livewire: '^3.5' }
+          - { php: 8.2, laravel: 12.*, testbench: 10.*, stability: prefer-stable, livewire: '^3.5' }
+          # Livewire 3 on a newer PHP too.
+          - { php: 8.4, laravel: 12.*, testbench: 10.*, stability: prefer-stable, livewire: '^3.5' }
         exclude:
-          - php: 8.2
-            laravel: 13.*
           - php: 8.5
             laravel: 11.*
 
