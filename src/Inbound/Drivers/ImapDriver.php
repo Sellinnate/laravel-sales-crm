@@ -4,6 +4,7 @@ namespace Sellinnate\SalesCrm\Inbound\Drivers;
 
 use Carbon\CarbonImmutable;
 use DirectoryTree\ImapEngine\Address;
+use DirectoryTree\ImapEngine\FolderInterface;
 use DirectoryTree\ImapEngine\MailboxInterface;
 use DirectoryTree\ImapEngine\MessageInterface;
 use Illuminate\Contracts\Cache\Repository as Cache;
@@ -40,7 +41,17 @@ class ImapDriver implements InboundDriver
             }
 
             $key = 'sales-crm:imap:'.md5($this->mailbox->config('host').'|'.$this->mailbox->config('username').'|'.$path);
+            $validity = self::uidValidity($folder);
             $cursor = $this->cache->get($key);
+
+            // UIDs of another UIDVALIDITY (the folder recreated, the mailbox migrated) mean nothing
+            // here: the cursor starts again from the last two days, duplicates are skipped by Message-ID.
+            if ($validity !== null && $this->cache->get($key.':validity') !== $validity) {
+                $cursor = null;
+                $this->cache->forget($key);
+                $this->cache->forever($key.':validity', $validity);
+            }
+
             // Oldest first: the cursor is the highest UID read, so a newer batch must never come before an older one.
             $query = $folder->messages()->withHeaders()->withBody()->leaveUnread()->setFetchOrderAsc();
             is_numeric($cursor) ? $query->uid((int) $cursor + 1, INF) : $query->since(CarbonImmutable::now()->subDays(2));
@@ -64,6 +75,17 @@ class ImapDriver implements InboundDriver
                 $this->cache->forever($key, $last);
             }
         }
+    }
+
+    private static function uidValidity(FolderInterface $folder): ?string
+    {
+        try {
+            $value = $folder->status()['UIDVALIDITY'] ?? null;
+        } catch (Throwable) {
+            return null;
+        }
+
+        return is_scalar($value) && (string) $value !== '' ? (string) $value : null;
     }
 
     public static function toInbound(MessageInterface $message): InboundEmail

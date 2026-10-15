@@ -380,3 +380,42 @@ it('closes as not sent an email the host vetoed or whose delivery stopped halfwa
     Event::assertDispatchedTimes(EmailFailed::class, 2);
     Event::assertNotDispatched(EmailSent::class);
 });
+
+it('reads the IMAP folder from the last days again when its UIDVALIDITY changes', function () {
+    $calls = [];
+    $query = Mockery::mock(MessageQueryInterface::class);
+
+    foreach (['withHeaders', 'withBody', 'leaveUnread', 'setFetchOrderAsc', 'uid', 'since', 'limit'] as $method) {
+        $query->shouldReceive($method)->andReturnUsing(function (...$arguments) use ($method, &$calls, $query) {
+            $calls[] = $method;
+
+            return $query;
+        });
+    }
+
+    $query->shouldReceive('get')->andReturn(new MessageCollection([]));
+    $folder = Mockery::mock(FolderInterface::class);
+    $folder->shouldReceive('messages')->andReturn($query);
+    $folder->shouldReceive('status')->andReturn(['UIDVALIDITY' => '7', 'UIDNEXT' => '3']);
+    $folders = Mockery::mock(FolderRepositoryInterface::class);
+    $folders->shouldReceive('find')->with('INBOX')->andReturn($folder);
+    $mailbox = Mockery::mock(MailboxInterface::class);
+    $mailbox->shouldReceive('folders')->andReturn($folders);
+    $mailbox->shouldReceive('config')->andReturn('imap.example.test');
+
+    $key = 'sales-crm:imap:'.md5('imap.example.test|imap.example.test|INBOX');
+    $cache = app('cache')->store();
+    $cache->forever($key, 5000);
+    $cache->forever($key.':validity', '6');
+
+    iterator_to_array((new ImapDriver($mailbox, $cache, ['INBOX'], [], 10))->fetch(), false);
+    expect($calls)->toContain('since')->not->toContain('uid')
+        ->and($cache->get($key))->toBeNull()
+        ->and($cache->get($key.':validity'))->toBe('7');
+
+    // Same UIDVALIDITY on the next poll, with a cursor of the new one: the cursor is used.
+    $cache->forever($key, 2);
+    $calls = [];
+    iterator_to_array((new ImapDriver($mailbox, $cache, ['INBOX'], [], 10))->fetch(), false);
+    expect($calls)->toContain('uid')->not->toContain('since');
+});
