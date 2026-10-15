@@ -227,8 +227,11 @@ class HandleInboundEmail
         }
 
         $model = Crm::userModel();
+        $query = $model::query();
+        // Quoted by the connection of the users, which may not be the one of the CRM.
+        $column = $query->getModel()->getConnection()->getQueryGrammar()->wrap(Crm::emailColumn());
         /** @var Model|null $user */
-        $user = $model::query()->where(Crm::raw('LOWER('.Crm::db()->getQueryGrammar()->wrap(Crm::emailColumn()).')'), Str::lower($address))->first();
+        $user = $query->where(Crm::raw('LOWER('.$column.')'), Str::lower($address))->first();
 
         return Crm::userKey($user);
     }
