@@ -136,6 +136,8 @@ fields, the error lists them.
 | `workspace` | string | Workspace key (`"type\|id"`). When workspaces are on and neither this nor `pipeline_id` is given, the user's first workspace is used. |
 | `pipeline_id`, `stage_id` | integer | |
 | `company_name` | string ≤ 200 | |
+| `company_vat` | string ≤ 32 | VAT number, to match the company or give it to a new one |
+| `company_website` | string ≤ 255 | website, to match the company by domain or give it to a new one |
 | `person` | object | `{first_name, last_name, email, mobile, job_title}` |
 | `owner_id` | string | |
 | `amount_once`, `recurring` | number ≥ 0 | |

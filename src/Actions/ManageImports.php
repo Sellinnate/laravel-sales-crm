@@ -7,10 +7,12 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Sellinnate\SalesCrm\Enums\ImportStatus;
+use Sellinnate\SalesCrm\Exceptions\ImportException;
 use Sellinnate\SalesCrm\Jobs\RunImport;
 use Sellinnate\SalesCrm\Models\Import;
 use Sellinnate\SalesCrm\Models\Pipeline;
@@ -63,8 +65,15 @@ class ManageImports
             'status' => ImportStatus::Uploaded,
         ]))->setWorkspace($workspace);
 
-        $reader = new SpreadsheetReader($disk, $path);
-        $sheets = $reader->sheets();
+        try {
+            $sheets = (new SpreadsheetReader($disk, $path))->sheets();
+        } catch (ImportException $exception) {
+            // Not a spreadsheet after all (a renamed or damaged file): an error of the form, no file left behind.
+            Storage::disk($disk)->delete($path);
+
+            throw ValidationException::withMessages(['file' => $exception->getMessage()]);
+        }
+
         $import->sheet = $sheets[0] ?? null;
         $import->save();
 

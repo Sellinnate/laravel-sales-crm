@@ -15,7 +15,7 @@ class CrmDealCreateTool extends CrmTool
 {
     protected string $name = 'crm_deal_create';
 
-    protected string $description = 'Creates a deal. Amounts are in major currency units (1500 = 1,500.00). Without pipeline_id the default pipeline of the workspace is used, without stage_id its first open stage. company_name is matched against the existing companies (VAT, domain, name) before creating one; person {first_name, last_name, email, mobile} becomes the primary contact. If the stage requires fields the error lists them: pass them and retry.';
+    protected string $description = 'Creates a deal. Amounts are in major currency units (1500 = 1,500.00). Without pipeline_id the default pipeline of the workspace is used, without stage_id its first open stage. company_name (with the optional company_vat and company_website) is matched against the existing companies by VAT number, domain and name before creating one; person {first_name, last_name, email, mobile} becomes the primary contact. If the stage requires fields the error lists them: pass them and retry.';
 
     public function schema(JsonSchema $schema): array
     {
@@ -25,6 +25,8 @@ class CrmDealCreateTool extends CrmTool
             'pipeline_id' => $schema->integer(),
             'stage_id' => $schema->integer(),
             'company_name' => $schema->string()->max(200),
+            'company_vat' => $schema->string()->max(32)->description('VAT number of the company, to match it or give it to a new one.'),
+            'company_website' => $schema->string()->max(255)->description('Website of the company, to match it by domain or give it to a new one.'),
             'person' => $schema->object()->description('{first_name, last_name, email, mobile, job_title}'),
             'owner_id' => $schema->string(),
             'amount_once' => $schema->number()->min(0),

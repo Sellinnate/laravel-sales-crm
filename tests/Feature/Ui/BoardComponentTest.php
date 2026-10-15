@@ -1,7 +1,9 @@
 <?php
 
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
+use Sellinnate\SalesCrm\Livewire\DealPanel;
 use Sellinnate\SalesCrm\Livewire\DealsBoard;
 use Sellinnate\SalesCrm\Models\Deal;
 use Sellinnate\SalesCrm\Models\SavedView;
@@ -162,4 +164,13 @@ it('keeps the deals of other workspaces out of the board', function () {
         ->assertSet('showPanel', false)
         ->call('setView', 'list')
         ->assertDontSee('Beta secret');
+});
+
+it('never lets the browser choose the pending move of the requirements form', function () {
+    foreach (['pendingDeal', 'pendingStage', 'pendingAfter'] as $property) {
+        expect(fn () => Livewire::test(DealsBoard::class)->set($property, 1))->toThrow(CannotUpdateLockedPropertyException::class);
+    }
+
+    expect(fn () => Livewire::test(DealPanel::class, ['dealId' => SalesCrm::shared()->createDeal(['title' => 'Locked'], $this->seller)->id])->set('pendingStage', 1))
+        ->toThrow(CannotUpdateLockedPropertyException::class);
 });

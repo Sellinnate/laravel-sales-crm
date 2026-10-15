@@ -11,6 +11,7 @@ use Sellinnate\SalesCrm\Actions\ManageImports;
 use Sellinnate\SalesCrm\Enums\ImportStatus;
 use Sellinnate\SalesCrm\Events\ImportFinished;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
+use Sellinnate\SalesCrm\Models\Company;
 use Sellinnate\SalesCrm\Models\Deal;
 use Sellinnate\SalesCrm\Models\Note;
 use Sellinnate\SalesCrm\Services\Import\Importer;
@@ -182,4 +183,23 @@ it('reads the delimiter outside the quoted fields of the header', function () {
 
     expect($rows[1])->toBe(['Company, legal name', 'Title, short', 'Value'])
         ->and($rows[2])->toBe(['Acme, Inc.', 'Website', '1200']);
+});
+
+it('matches and completes the companies by the VAT number and the website of the rows', function () {
+    $acme = SalesCrm::shared()->company(['name' => 'Acme S.r.l.', 'vat_number' => 'IT01234567890']);
+    $file = csvFile('companies.csv', [
+        ['Title', 'Ragione sociale', 'Partita IVA', 'Sito web'],
+        ['Portal', 'ACME Italia srl', 'IT01234567890', ''],
+        ['App', 'Quartz Labs', 'IT09876543210', 'https://www.quartzlabs.example'],
+    ]);
+
+    $import = $this->imports->upload(null, $this->pipeline, $file, $this->admin);
+    $this->imports->map($import, ['columns' => [0 => 'title', 1 => 'company', 2 => 'company_vat', 3 => 'company_website']], $this->admin);
+    $this->imports->run($import->fresh(), $this->admin);
+
+    $quartz = Company::query()->where('name', 'Quartz Labs')->first();
+    expect(Deal::query()->where('title', 'Portal')->value('company_id'))->toBe($acme->id)
+        ->and(Company::query()->count())->toBe(2)
+        ->and($quartz?->vat_number)->toBe('IT09876543210')
+        ->and($quartz?->domain)->toBe('quartzlabs.example');
 });

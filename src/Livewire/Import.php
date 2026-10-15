@@ -51,7 +51,13 @@ class Import extends Component
     /** @var array<int|string, string> */
     public array $columns = [];
 
-    /** @var array<string, string> */
+    /**
+     * The stage of each value of the stage column, as a list: a value is never a binding path
+     * ("Closed.Won", "Prop. inviata" would be read as nested keys). Rows of `value` and `stage`, read
+     * defensively: the browser sends them back.
+     *
+     * @var array<int|string, mixed>
+     */
     public array $stages = [];
 
     public string $defaultStage = '';
@@ -136,7 +142,11 @@ class Import extends Component
             $this->columns[(string) $index] = (string) ($saved[$index] ?? ($saved === null ? ($suggested[$index] ?? '') : ''));
         }
 
-        $this->stages = array_map('strval', $import->mapping['stages'] ?? []);
+        $this->stages = [];
+
+        foreach ((array) ($import->mapping['stages'] ?? []) as $value => $stage) {
+            $this->stages[] = ['value' => (string) $value, 'stage' => (string) $stage];
+        }
         $this->suggestStageValues();
     }
 
@@ -166,10 +176,11 @@ class Import extends Component
 
         $values = app(Importer::class)->values($import, (int) $column);
         $suggested = Importer::suggestStages($values, $import->pipeline->stages);
+        $chosen = $this->stageMap();
         $stages = [];
 
         foreach ($values as $value) {
-            $stages[$value] = $this->stages[$value] ?? $suggested[$value] ?? '';
+            $stages[] = ['value' => (string) $value, 'stage' => (string) ($chosen[$value] ?? $suggested[$value] ?? '')];
         }
 
         $this->stages = $stages;
@@ -189,7 +200,7 @@ class Import extends Component
             app(ManageImports::class)->map($import, [
                 'sheet' => $this->sheet === '' ? null : $this->sheet,
                 'columns' => array_filter($this->columns, fn (string $field): bool => $field !== ''),
-                'stages' => array_filter($this->stages, fn (string $stage): bool => $stage !== ''),
+                'stages' => array_filter($this->stageMap(), fn (string $stage): bool => $stage !== ''),
                 'default_stage_id' => $this->defaultStage === '' ? null : $this->defaultStage,
                 'month_first' => $this->monthFirst,
             ], $this->viewer());
@@ -303,5 +314,23 @@ class Import extends Component
     public function recent(): Collection
     {
         return ImportModel::query()->visibleTo($this->viewer())->latest('id')->limit(10)->get();
+    }
+
+    /**
+     * The stages chosen, by value of the stage column.
+     *
+     * @return array<string, string>
+     */
+    private function stageMap(): array
+    {
+        $map = [];
+
+        foreach ($this->stages as $row) {
+            if (is_array($row) && is_scalar($row['value'] ?? null)) {
+                $map[(string) $row['value']] = is_scalar($row['stage'] ?? null) ? (string) $row['stage'] : '';
+            }
+        }
+
+        return $map;
     }
 }

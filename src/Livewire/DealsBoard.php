@@ -9,6 +9,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -132,10 +133,14 @@ class DealsBoard extends Component
 
     public bool $showRequirements = false;
 
+    // Set by the server only (a move refused for its requirements): never by the browser.
+    #[Locked]
     public ?int $pendingDeal = null;
 
+    #[Locked]
     public ?int $pendingStage = null;
 
+    #[Locked]
     public ?int $pendingAfter = null;
 
     /** @var array<string, mixed> */
@@ -342,7 +347,7 @@ class DealsBoard extends Component
 
     public function completeMove(): void
     {
-        $deal = $this->pendingDeal === null ? null : Deal::query()->with('stage')->find($this->pendingDeal);
+        $deal = $this->pendingDeal === null ? null : Deal::query()->visibleTo($this->viewer())->with('stage')->find($this->pendingDeal);
         $stage = $this->pendingStage === null ? null : Stage::query()->find($this->pendingStage);
 
         if ($deal === null || $stage === null) {
@@ -409,8 +414,8 @@ class DealsBoard extends Component
     #[Computed]
     public function pendingMissing(): array
     {
-        $deal = $this->pendingDeal === null ? null : Deal::query()->find($this->pendingDeal);
-        $stage = $this->pendingStage === null ? null : Stage::query()->find($this->pendingStage);
+        $deal = $this->pendingDeal === null ? null : Deal::query()->visibleTo($this->viewer())->find($this->pendingDeal);
+        $stage = $deal === null || $this->pendingStage === null ? null : Stage::query()->where('pipeline_id', $deal->pipeline_id)->find($this->pendingStage);
 
         return $deal === null || $stage === null ? [] : app(DealRequirements::class)->missing($deal, $stage);
     }
@@ -418,8 +423,8 @@ class DealsBoard extends Component
     #[Computed]
     public function pendingNeedsReason(): bool
     {
-        $deal = $this->pendingDeal === null ? null : Deal::query()->find($this->pendingDeal);
-        $stage = $this->pendingStage === null ? null : Stage::query()->find($this->pendingStage);
+        $deal = $this->pendingDeal === null ? null : Deal::query()->visibleTo($this->viewer())->find($this->pendingDeal);
+        $stage = $deal === null || $this->pendingStage === null ? null : Stage::query()->where('pipeline_id', $deal->pipeline_id)->find($this->pendingStage);
 
         return $deal !== null && $stage !== null && app(DealRequirements::class)->needsLostReason($deal, $stage);
     }
@@ -427,7 +432,8 @@ class DealsBoard extends Component
     #[Computed]
     public function pendingStageName(): string
     {
-        return $this->pendingStage === null ? '' : (string) Stage::query()->whereKey($this->pendingStage)->value('name');
+        return $this->pendingStage === null ? '' : (string) Stage::query()->whereKey($this->pendingStage)
+            ->whereIn('pipeline_id', Pipeline::query()->visibleTo($this->viewer())->select('id'))->value('name');
     }
 
     public function startCreate(?int $stageId = null): void

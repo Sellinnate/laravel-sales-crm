@@ -16,6 +16,7 @@ use Sellinnate\SalesCrm\Livewire\Reports;
 use Sellinnate\SalesCrm\Livewire\Settings;
 use Sellinnate\SalesCrm\Models\Company;
 use Sellinnate\SalesCrm\Models\Deal;
+use Sellinnate\SalesCrm\Models\Import as ImportModel;
 use Sellinnate\SalesCrm\Models\Stage;
 use Sellinnate\SalesCrm\Services\CustomFields;
 
@@ -114,12 +115,45 @@ it('runs the import wizard from upload to report', function () {
         ->assertSet('columns', ['0' => 'external_ref', '1' => 'company', '2' => 'stage', '3' => 'amount_once']);
 
     $negotiation = Stage::query()->where('name', 'Negotiation')->firstOrFail();
-    expect($component->get('stages'))->toBe(['Negotiation phase' => (string) $negotiation->id, 'New' => (string) Stage::query()->where('name', 'New lead')->value('id')]);
+    expect($component->get('stages'))->toBe([
+        ['value' => 'Negotiation phase', 'stage' => (string) $negotiation->id],
+        ['value' => 'New', 'stage' => (string) Stage::query()->where('name', 'New lead')->value('id')],
+    ]);
 
     $component->call('saveMapping')->assertSee('Acme')->call('run')->assertSee(__('sales-crm::ui.import.created'));
 
     expect(Deal::query()->where('external_ref', 'R-1')->first()?->stage_id)->toBe($negotiation->id)
         ->and(Deal::query()->count())->toBe(2);
+});
+
+it('maps stage values that contain a dot', function () {
+    Storage::fake('local');
+    $this->actingAs($this->admin);
+    $csv = UploadedFile::fake()->createWithContent('deals.csv', "Title;Stage\nPortal;Closed.Won\nApp;Prop. inviata\n");
+    $won = Stage::query()->where('name', 'Won')->firstOrFail();
+
+    $component = Livewire::test(Import::class)->set('upload', $csv)->call('uploadFile')->assertHasNoErrors()
+        ->set('columns', ['0' => 'title', '1' => 'stage']);
+    $index = collect($component->get('stages'))->search(fn (array $row): bool => $row['value'] === 'Closed.Won');
+
+    $component->set('stages.'.$index.'.stage', (string) $won->id)->call('saveMapping')->assertHasNoErrors();
+
+    expect(ImportModel::query()->latest('id')->first()?->mapping['stages'] ?? [])->toHaveKey('Closed.Won', $won->id)
+        ->and(collect($component->get('stages'))->firstWhere('value', 'Prop. inviata'))->not->toBeNull();
+});
+
+it('refuses a damaged spreadsheet with a message, leaving no file behind', function () {
+    Storage::fake('local');
+    $this->actingAs($this->admin);
+
+    Livewire::test(Import::class)
+        ->set('upload', UploadedFile::fake()->createWithContent('deals.xlsx', 'not a zip at all'))
+        ->call('uploadFile')
+        ->assertHasErrors('upload.file')
+        ->assertSee(__('sales-crm::validation.import_unreadable'));
+
+    expect(ImportModel::query()->count())->toBe(0)
+        ->and(Storage::disk('local')->allFiles((string) config('sales-crm.import.directory')))->toBe([]);
 });
 
 it('closes the import to users who do not manage the CRM', function () {

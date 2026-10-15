@@ -83,6 +83,14 @@ class DealPanel extends Component
     /** @var array<string, mixed> */
     public array $custom = [];
 
+    /**
+     * The custom fields as loaded, to send only those changed.
+     *
+     * @var array<string, mixed>
+     */
+    #[Locked]
+    public array $originalCustom = [];
+
     public string $action = '';
 
     public string $noteBody = '';
@@ -112,6 +120,8 @@ class DealPanel extends Component
 
     public string $kind = '';
 
+    // Set by the server only (a move refused for its requirements): never by the browser.
+    #[Locked]
     public ?int $pendingStage = null;
 
     /** @var array<string, mixed> */
@@ -199,8 +209,11 @@ class DealPanel extends Component
 
         foreach (CustomFields::of($deal->workspaceRef()) as $field) {
             $value = $deal->custom_values[$field['key']] ?? null;
-            $this->custom[$field['key']] = $field['type'] === 'boolean' ? (bool) $value : (is_scalar($value) ? (string) $value : '');
+            // An unset yes/no stays unknown (null) until the user ticks it: never saved as "no".
+            $this->custom[$field['key']] = $field['type'] === 'boolean' ? ($value === null ? null : (bool) $value) : (is_scalar($value) ? (string) $value : '');
         }
+
+        $this->originalCustom = $this->custom;
     }
 
     /**
@@ -231,8 +244,11 @@ class DealPanel extends Component
             }
         }
 
-        if ($this->custom !== []) {
-            $changes['custom_values'] = $this->custom;
+        // Only the custom fields changed here: the others may have been changed meanwhile elsewhere.
+        $custom = array_filter($this->custom, fn (mixed $value, string $key): bool => $value !== ($this->originalCustom[$key] ?? null), ARRAY_FILTER_USE_BOTH);
+
+        if ($custom !== []) {
+            $changes['custom_values'] = $custom;
         }
 
         try {
@@ -283,7 +299,7 @@ class DealPanel extends Component
     public function completeMove(): void
     {
         $deal = $this->deal();
-        $stage = $this->pendingStage === null ? null : Stage::query()->find($this->pendingStage);
+        $stage = $this->pendingStage === null ? null : Stage::query()->where('pipeline_id', $this->deal()->pipeline_id)->find($this->pendingStage);
 
         if ($stage === null) {
             $this->showRequirements = false;
@@ -311,14 +327,14 @@ class DealPanel extends Component
      */
     public function pendingMissing(): array
     {
-        $stage = $this->pendingStage === null ? null : Stage::query()->find($this->pendingStage);
+        $stage = $this->pendingStage === null ? null : Stage::query()->where('pipeline_id', $this->deal()->pipeline_id)->find($this->pendingStage);
 
         return $stage === null ? [] : app(DealRequirements::class)->missing($this->deal(), $stage);
     }
 
     public function pendingNeedsReason(): bool
     {
-        $stage = $this->pendingStage === null ? null : Stage::query()->find($this->pendingStage);
+        $stage = $this->pendingStage === null ? null : Stage::query()->where('pipeline_id', $this->deal()->pipeline_id)->find($this->pendingStage);
 
         return $stage !== null && app(DealRequirements::class)->needsLostReason($this->deal(), $stage);
     }

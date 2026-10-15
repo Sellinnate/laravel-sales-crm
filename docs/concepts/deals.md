@@ -63,6 +63,7 @@ cents.
 | `title` | **required**, string ≤ 200 |
 | `company_id` | id of a company of the same workspace |
 | `company_name` | string ≤ 200: matched against existing companies, created if new |
+| `company_vat`, `company_website` | strings ≤ 32 / ≤ 255, with `company_name`: matched first by VAT number and domain, and given to a new company |
 | `owner_id` | key of a user who works in the workspace |
 | `priority` | `p1`, `p2`, `p3`, `p4`, `excluded` |
 | `source` | `inbound`, `outbound`, `referral`, `email`, `event`, `partner`, `website`, `integration`, `import`, `other` (default `other`) |

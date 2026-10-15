@@ -50,6 +50,9 @@ class DealFields
             'title' => ['required', 'string', 'max:200'],
             'company_id' => ['nullable', 'integer', $companies],
             'company_name' => ['nullable', 'string', 'max:200'],
+            // With company_name: matched by VAT number and domain first, and given to a new company.
+            'company_vat' => ['nullable', 'string', 'max:32'],
+            'company_website' => ['nullable', 'string', 'max:255'],
             'owner_id' => ['nullable', $this->memberOf($workspace)],
             'priority' => ['nullable', Rule::enum(Priority::class)],
             'source' => ['required', Rule::enum(DealSource::class)],
@@ -99,7 +102,7 @@ class DealFields
     {
         $attributes = [];
 
-        foreach (['title', 'company_id', 'company_name', 'owner_id', 'priority', 'source', 'tags', 'external_ref', 'amount_once', 'deposit', 'recurring',
+        foreach (['title', 'company_id', 'company_name', 'company_vat', 'company_website', 'owner_id', 'priority', 'source', 'tags', 'external_ref', 'amount_once', 'deposit', 'recurring',
             'recurring_period', 'recurring_options', 'payment_terms', 'offer_details', 'offer_valid_until', 'expected_close_date', 'sub_status',
             'next_step', 'blocker', 'missing_data', 'call_context', 'closing_tip', 'approval_required', 'approval_status', 'approver_id',
             'approval_note', 'signature_status', 'signature_evidence', 'payment_status', 'amount_collected', 'payment_evidence',
@@ -166,7 +169,7 @@ class DealFields
 
         foreach ($validated as $key => $value) {
             match ($key) {
-                'company_name' => null,
+                'company_name', 'company_vat', 'company_website' => null,
                 'amount_once' => $deal->amount_once_cents = self::cents($value),
                 'deposit' => $deal->deposit_cents = self::cents($value),
                 'recurring' => $deal->recurring_cents = self::cents($value),
@@ -181,7 +184,11 @@ class DealFields
 
         if (array_key_exists('company_name', $validated) && ! array_key_exists('company_id', $validated)) {
             $name = trim(is_scalar($validated['company_name']) ? (string) $validated['company_name'] : '');
-            $deal->company_id = $name === '' ? null : $this->matcher->company($deal->workspaceRef(), ['name' => $name], $by)->id;
+            $deal->company_id = $name === '' ? null : $this->matcher->company($deal->workspaceRef(), [
+                'name' => $name,
+                'vat_number' => $validated['company_vat'] ?? null,
+                'website' => $validated['company_website'] ?? null,
+            ], $by)->id;
         }
 
         // A contact recorded by hand is activity too: the deal is no longer stale. Not a future date.

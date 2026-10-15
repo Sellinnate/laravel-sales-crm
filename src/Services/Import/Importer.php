@@ -375,7 +375,11 @@ class Importer
             }
         }
 
-        $company !== null ? $deal['company_name'] = Str::limit($company, 199, '') : null;
+        if ($company !== null) {
+            $deal['company_name'] = Str::limit($company, 199, '');
+            $deal['company_vat'] = $first('company_vat') === null ? null : Str::limit((string) $first('company_vat'), 32, '');
+            $deal['company_website'] = $first('company_website') === null ? null : Str::limit((string) $first('company_website'), 255, '');
+        }
 
         $person = array_filter([
             'email' => Str::lower((string) $first('person_email')),

@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Sellinnate\SalesCrm\Actions\SaveEmailTemplate;
+use Sellinnate\SalesCrm\Actions\SaveWorkspaceSettings;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Livewire\DealPanel;
 use Sellinnate\SalesCrm\Models\Activity;
@@ -125,4 +126,25 @@ it('deletes a deal only for managers', function () {
     $this->actingAs(crmUser(['is_admin' => true]));
     Livewire::test(DealPanel::class, ['dealId' => $this->deal->id])->call('deleteDeal')->assertDispatched('crm-close-panel');
     expect($this->deal->fresh())->toBeNull();
+});
+
+it('saves only the custom fields changed in the panel, leaving unknown yes/no fields unset', function () {
+    app(SaveWorkspaceSettings::class)->customFields(null, [
+        ['key' => 'seats', 'label' => 'Seats', 'type' => 'number'],
+        ['key' => 'renewal', 'label' => 'Auto renewal', 'type' => 'boolean'],
+    ], crmUser(['is_admin' => true]));
+    $this->deal->forceFill(['custom_values' => ['seats' => 5]])->save();
+
+    $panel = Livewire::test(DealPanel::class, ['dealId' => $this->deal->id]);
+
+    // Changed meanwhile by someone else (the API, another panel).
+    $this->deal->fresh()->forceFill(['custom_values' => ['seats' => 9]])->save();
+
+    $panel->set('form.next_step', 'Send the quote')->call('save')->assertHasNoErrors();
+
+    expect($this->deal->fresh()->custom_values)->toBe(['seats' => 9])
+        ->and($this->deal->fresh()->next_step)->toBe('Send the quote');
+
+    $panel->set('custom.renewal', true)->call('save');
+    expect($this->deal->fresh()->custom_values)->toBe(['seats' => 9, 'renewal' => true]);
 });

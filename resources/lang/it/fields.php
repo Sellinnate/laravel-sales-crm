@@ -2,7 +2,7 @@
 
 return [
     'deal' => [
-        'title' => 'Titolo', 'company_id' => 'Azienda', 'company_name' => 'Azienda', 'owner_id' => 'Owner', 'priority' => 'Priorità',
+        'title' => 'Titolo', 'company_id' => 'Azienda', 'company_name' => 'Azienda', 'company_vat' => 'Partita IVA dell\'azienda', 'company_website' => 'Sito dell\'azienda', 'owner_id' => 'Owner', 'priority' => 'Priorità',
         'source' => 'Fonte', 'tags' => 'Tag', 'external_ref' => 'Riferimento esterno', 'amount_once' => 'Importo una tantum',
         'amount_once_cents' => 'Importo una tantum', 'deposit' => 'Acconto', 'deposit_cents' => 'Acconto', 'recurring' => 'Importo ricorrente',
         'recurring_cents' => 'Importo ricorrente', 'recurring_period' => 'Periodicità', 'recurring_options' => 'Ricorrenti e opzioni',

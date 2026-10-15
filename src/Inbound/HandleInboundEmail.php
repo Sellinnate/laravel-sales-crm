@@ -3,10 +3,12 @@
 namespace Sellinnate\SalesCrm\Inbound;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
+use Sellinnate\SalesCrm\Authorization\Access;
 use Sellinnate\SalesCrm\Data\InboundEmail;
 use Sellinnate\SalesCrm\Enums\EmailDirection;
 use Sellinnate\SalesCrm\Enums\EmailStatus;
@@ -52,14 +54,16 @@ class HandleInboundEmail
         $messageId = $messageId !== null && strlen($messageId) <= self::MAX_ID ? $messageId : self::syntheticId($email);
         $threads = $this->threads($email, $workspace);
         // Written by a user from their own client (a sent folder, the BCC dropbox), in a thread or not.
-        $outbound = $this->senderIsUser($email);
+        $sender = $this->userOf($email->fromEmail);
+        $outbound = $sender !== null;
 
         if ($threads === []) {
             $people = $this->people($email, $workspace, $outbound);
             // The same person in more workspaces says nothing of whose matter it is: not kept.
+            $people = $sender === null ? $people : $this->workedBy($people, $sender);
             $targets = count($people) === 1 ? $people : [];
         } else {
-            $targets = $threads;
+            $targets = $sender === null ? $threads : $this->workedBy($threads, $sender);
         }
 
         $stored = null;
@@ -215,12 +219,26 @@ class HandleInboundEmail
         return $targets;
     }
 
-    private function senderIsUser(InboundEmail $email): bool
+    /**
+     * The targets in the workspaces the user works in: the mail of a user never reaches a workspace
+     * that isn't theirs, even through a person or a thread found there.
+     *
+     * @param  list<array{0: Workspace|null, 1: int|null, 2: int|null}>  $targets
+     * @return list<array{0: Workspace|null, 1: int|null, 2: int|null}>
+     */
+    private function workedBy(array $targets, Model $user): array
     {
-        return $this->userKeyOf($email->fromEmail) !== null;
+        $access = app(Access::class);
+
+        return array_values(array_filter($targets, fn (array $target): bool => $user instanceof Authenticatable && $access->works($user, $target[0])));
     }
 
     private function userKeyOf(?string $address): int|string|null
+    {
+        return Crm::userKey($this->userOf($address));
+    }
+
+    private function userOf(?string $address): ?Model
     {
         if ($address === null || $address === '') {
             return null;
@@ -233,6 +251,6 @@ class HandleInboundEmail
         /** @var Model|null $user */
         $user = $query->where(Crm::raw('LOWER('.$column.')'), Str::lower($address))->first();
 
-        return Crm::userKey($user);
+        return $user;
     }
 }

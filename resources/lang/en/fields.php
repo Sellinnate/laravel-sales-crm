@@ -2,7 +2,7 @@
 
 return [
     'deal' => [
-        'title' => 'Title', 'company_id' => 'Company', 'company_name' => 'Company', 'owner_id' => 'Owner', 'priority' => 'Priority',
+        'title' => 'Title', 'company_id' => 'Company', 'company_name' => 'Company', 'company_vat' => 'Company VAT number', 'company_website' => 'Company website', 'owner_id' => 'Owner', 'priority' => 'Priority',
         'source' => 'Source', 'tags' => 'Tags', 'external_ref' => 'External reference', 'amount_once' => 'One-off amount',
         'amount_once_cents' => 'One-off amount', 'deposit' => 'Deposit', 'deposit_cents' => 'Deposit', 'recurring' => 'Recurring amount',
         'recurring_cents' => 'Recurring amount', 'recurring_period' => 'Billing period', 'recurring_options' => 'Recurring and options',

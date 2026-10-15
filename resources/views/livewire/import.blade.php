@@ -28,6 +28,7 @@
                     <input type="file" class="crm-input" wire:model="upload" accept=".{{ implode(',.', SpreadsheetReader::extensions()) }}" data-test="import-file">
                 </x-sales-crm::field>
                 @error('upload') <p class="crm-error">{{ $message }}</p> @enderror
+                @error('upload.file') <p class="crm-error" data-test="import-upload-error">{{ $message }}</p> @enderror
                 <div class="flex justify-end"><button type="submit" class="crm-btn crm-btn-primary" wire:loading.attr="disabled" data-test="import-upload-submit"><x-sales-crm::icon name="upload" :size="14" /> {{ __('sales-crm::ui.import.continue') }}</button></div>
             </form>
 
@@ -82,9 +83,9 @@
                 <section class="crm-card">
                     <h2 class="border-b border-line px-4 py-2.5 text-[13px] font-semibold">{{ __('sales-crm::ui.import.step_stages') }}</h2>
                     <div class="grid gap-2 p-4 sm:grid-cols-2">
-                        @foreach ($stages as $value => $stageId)
-                            <x-sales-crm::field :label="$value">
-                                <select class="crm-select" wire:model="stages.{{ $value }}">
+                        @foreach ($stages as $index => $row)
+                            <x-sales-crm::field :label="$row['value']" wire:key="import-stage-{{ $index }}">
+                                <select class="crm-select" wire:model="stages.{{ $index }}.stage" data-test="import-stage-{{ $index }}">
                                     <option value="">{{ __('sales-crm::ui.import.default_stage_option') }}</option>
                                     @foreach ($import->pipeline?->stages ?? [] as $stage)<option value="{{ $stage->id }}">{{ $stage->name }}</option>@endforeach
                                 </select>
