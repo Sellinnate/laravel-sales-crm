@@ -214,3 +214,20 @@ it('keeps as many tags of a row as the deals allow', function () {
 
     expect(Deal::query()->where('title', 'Tagged')->first()?->tags)->toBe(['a', 'b', 'c']);
 });
+
+it('reads back the cells the export protected from formulas, in CSV and XLSX', function () {
+    Storage::fake('local');
+    Storage::disk('local')->put('imports/back.csv', "Title,Ref\n'=Portal,'@customer\n");
+    $path = sys_get_temp_dir().'/crm-test-'.uniqid().'.xlsx';
+    $writer = new Writer;
+    $writer->openToFile($path);
+    $writer->addRow(Row::fromValues(['Title', 'Ref']));
+    $writer->addRow(Row::fromValues(["'=Portal", "'@customer"]));
+    $writer->close();
+    Storage::disk('local')->put('imports/back.xlsx', (string) file_get_contents($path));
+    @unlink($path);
+
+    foreach (['imports/back.csv', 'imports/back.xlsx'] as $file) {
+        expect(iterator_to_array((new SpreadsheetReader('local', $file))->rows())[2])->toBe(['=Portal', '@customer']);
+    }
+});

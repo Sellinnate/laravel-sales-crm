@@ -163,13 +163,13 @@ class SpreadsheetReader
                     $cells = [];
 
                     foreach ($row->toArray() as $value) {
-                        $cells[] = trim(match (true) {
+                        $cells[] = SpreadsheetExport::restore(trim(match (true) {
                             $value instanceof \DateTimeInterface => $value->format('Y-m-d'),
                             is_float($value) && floor($value) === $value && abs($value) < 1e15 => (string) (int) $value,
                             is_bool($value) => $value ? '1' : '0',
                             is_scalar($value) => (string) $value,
                             default => '',
-                        });
+                        }));
                     }
 
                     if (implode('', $cells) === '') {
