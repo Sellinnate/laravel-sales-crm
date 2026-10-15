@@ -17,6 +17,8 @@ it('reads amounts only when they are readable', function (string $text, ?int $ce
     ['$2,000', 200000],
     ['2.000 €', 200000],
     ['1500 EUR', 150000],
+    ['euro 1500', 150000],
+    ['1.200 Euro', 120000],
     ['12,5', 1250],
     ['about 1500', null],
     ['1500 or 2000', null],

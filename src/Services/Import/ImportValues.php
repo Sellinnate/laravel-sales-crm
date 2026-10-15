@@ -29,7 +29,7 @@ class ImportValues
      */
     public static function cents(string $text): ?int
     {
-        $text = trim((string) preg_replace('/^(eur|euro|usd|gbp|chf)\s*|\s*(eur|euro|usd|gbp|chf)\.?$/iu', '', trim($text)));
+        $text = trim((string) preg_replace('/^(euro|eur|usd|gbp|chf)\s*|\s*(euro|eur|usd|gbp|chf)\.?$/iu', '', trim($text)));
         $text = trim(str_replace(['€', '$', '£', "\u{00A0}", ' '], '', $text));
 
         if ($text === '' || preg_match('/^\d{1,3}([.,]\d{3})*([.,]\d{1,2})?$|^\d+([.,]\d{1,2})?$/', $text) !== 1) {
