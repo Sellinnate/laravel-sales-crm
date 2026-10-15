@@ -132,6 +132,9 @@ class ManageActivities
         Gate::forUser($by)->authorize('update', $activity);
 
         return Crm::db()->transaction(function () use ($activity, $outcome, $by): Activity {
+            // The deal first, then the activity: the order of save() and of every write on the deal.
+            Crm::lockDeal($activity->deal_id);
+
             // Read again under lock: done already (another tab, a double click, a retry), it stays as
             // it was, with its outcome, and nothing is announced twice.
             $current = Activity::query()->whereKey($activity->getKey())->lockForUpdate()->first();

@@ -80,7 +80,9 @@ class DeliverEmail implements ShouldQueue
             try {
                 $sent = Mail::mailer($this->mailer)->send(new DealEmail($email));
             } catch (TransportExceptionInterface $exception) {
-                // Refused by the transport: not sent, back in the queue for the next attempt.
+                // Refused by the transport (server unreachable, rejected): back in the queue for the next
+                // attempt. A connection lost after the server took the whole message raises the same
+                // exception and may send it twice: the price of retrying the common outage at all.
                 Email::query()->whereKey($email->id)->where('status', EmailStatus::Sending->value)->update(['status' => EmailStatus::Queued->value]);
 
                 throw $exception;

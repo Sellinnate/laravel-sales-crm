@@ -46,8 +46,11 @@ $email->status;   // EmailStatus::Queued
 - The email is stored as **queued** and delivered by a queued job through
   Laravel's mailer, after the transaction commits. It is retried 3 times (after
   1 and 5 minutes). The job marks it **sending** before handing it to the
-  mailer, so a retry never sends it twice; if the mailer refuses it, it goes
-  back to **queued** for the next attempt. On success it becomes **sent**,
+  mailer, so a retry never sends it twice; if the transport refuses it (server
+  unreachable, message rejected), it goes back to **queued** for the next
+  attempt. A connection lost right after the server accepted the whole message
+  raises the same transport error, so in that rare case the email may arrive
+  twice: the price of retrying ordinary outages. On success it becomes **sent**,
   fires `EmailSent` and updates the deal's last contact; after the last failure
   it becomes **failed** and fires `EmailFailed`. An email a listener of your app
   vetoes (`MessageSending` answering `false`) becomes **failed** with that
