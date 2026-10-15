@@ -1,0 +1,42 @@
+laravel: '@testbench'
+
+providers:
+  - Livewire\LivewireServiceProvider
+  - Sellinnate\SalesCrm\SalesCrmServiceProvider
+  - Workbench\App\Providers\WorkbenchServiceProvider
+
+migrations:
+  - workbench/database/migrations
+  - tests/database/migrations
+
+seeders:
+  - Workbench\Database\Seeders\DatabaseSeeder
+
+env:
+  - APP_NAME="Sales CRM workbench"
+  - APP_DEBUG=true
+  - DB_CONNECTION=sqlite
+  - SESSION_DRIVER=file
+  - CACHE_STORE=file
+  - QUEUE_CONNECTION=sync
+  - MAIL_MAILER=log
+  - AUTH_MODEL=Workbench\App\Models\User
+
+workbench:
+  start: '/crm'
+  install: true
+  health: false
+  discovers:
+    web: true
+    api: false
+    commands: false
+    components: false
+    views: false
+  build:
+    - create-sqlite-db
+    - db-wipe
+    - migrate-fresh:
+        --seed: true
+        --seeder: Workbench\Database\Seeders\DatabaseSeeder
+  assets: []
+  sync: []

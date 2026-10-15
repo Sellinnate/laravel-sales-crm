@@ -1,0 +1,381 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Sellinnate\SalesCrm\Support\Columns;
+use Sellinnate\SalesCrm\Support\Crm;
+
+/*
+| The tables of sellinnate/sales-crm. Names take the prefix of `sales-crm.database.table_prefix`
+| (crm_ by default); the workspace and user key types follow `sales-crm.database`.
+*/
+return new class extends Migration
+{
+    public function getConnection(): ?string
+    {
+        return Crm::connection() ?? parent::getConnection();
+    }
+
+    public function up(): void
+    {
+        $t = fn (string $name): string => Crm::table($name);
+
+        Schema::create($t('pipelines'), function (Blueprint $table): void {
+            $table->id();
+            Columns::workspace($table);
+            $table->string('name', 80);
+            $table->unsignedSmallInteger('position')->default(0);
+            $table->boolean('is_active')->default(true);
+            // Raised by every change of the board, which the boards open elsewhere poll.
+            $table->unsignedBigInteger('revision')->default(0);
+            Columns::user($table, 'created_by');
+            $table->timestamps();
+        });
+
+        Schema::create($t('stages'), function (Blueprint $table) use ($t): void {
+            $table->id();
+            $table->foreignId('pipeline_id')->constrained($t('pipelines'))->cascadeOnDelete();
+            $table->string('name', 80);
+            $table->unsignedSmallInteger('position')->default(0);
+            $table->string('color', 16)->default('neutral');
+            $table->unsignedTinyInteger('probability')->default(0);
+            $table->string('kind', 8)->default('open');
+            $table->unsignedSmallInteger('rotting_days')->nullable();
+            $table->json('required_fields')->nullable();
+            $table->json('on_enter_activity')->nullable();
+            $table->timestamps();
+
+            $table->index(['pipeline_id', 'position']);
+        });
+
+        Schema::create($t('companies'), function (Blueprint $table): void {
+            $table->id();
+            Columns::workspace($table);
+            $table->string('name', 200);
+            $table->string('name_key', 200);
+            $table->string('legal_name', 200)->nullable();
+            $table->string('vat_number', 32)->nullable();
+            $table->string('vat_key', 32)->nullable();
+            $table->string('website', 255)->nullable();
+            $table->string('domain', 191)->nullable();
+            $table->string('email', 191)->nullable();
+            $table->string('phone', 32)->nullable();
+            $table->string('address', 255)->nullable();
+            $table->string('city', 120)->nullable();
+            $table->string('region', 120)->nullable();
+            $table->string('postal_code', 20)->nullable();
+            $table->string('country', 2)->nullable();
+            $table->string('industry', 120)->nullable();
+            $table->text('notes')->nullable();
+            Columns::user($table, 'created_by');
+            $table->timestamps();
+
+            $table->index('name_key');
+            $table->index('vat_key');
+            $table->index('domain');
+        });
+
+        Schema::create($t('people'), function (Blueprint $table) use ($t): void {
+            $table->id();
+            Columns::workspace($table);
+            $table->foreignId('company_id')->nullable()->index()->constrained($t('companies'))->nullOnDelete();
+            $table->string('first_name', 120)->nullable();
+            $table->string('last_name', 120)->nullable();
+            $table->string('job_title', 160)->nullable();
+            $table->string('email', 191)->nullable();
+            $table->string('mobile', 32)->nullable();
+            $table->string('phone', 32)->nullable();
+            $table->string('phone_source', 255)->nullable();
+            $table->text('notes')->nullable();
+            Columns::user($table, 'created_by');
+            $table->timestamps();
+
+            $table->index('email');
+            $table->index('mobile');
+            $table->index('phone');
+        });
+
+        Schema::create($t('deals'), function (Blueprint $table) use ($t): void {
+            $table->id();
+            Columns::workspace($table, key: true);
+            $table->foreignId('pipeline_id')->constrained($t('pipelines'))->cascadeOnDelete();
+            // NO ACTION: a stage with deals is never deleted on its own.
+            $table->foreignId('stage_id')->index()->constrained($t('stages'));
+            $table->unsignedInteger('position')->default(0);
+            $table->string('title', 200);
+            $table->foreignId('company_id')->nullable()->index()->constrained($t('companies'))->nullOnDelete();
+            Columns::user($table, 'owner_id');
+            $table->string('priority', 16)->nullable();
+            $table->json('tags')->nullable();
+
+            // Source and origin: the record of the host the deal was born from (one deal per origin).
+            $table->string('source', 32)->default('other');
+            $table->string('origin_type', 191)->nullable();
+            $table->string('origin_id', 64)->nullable();
+            $table->string('external_ref', 64)->nullable();
+
+            // Amounts (in cents) and offer.
+            $table->unsignedBigInteger('amount_once_cents')->nullable();
+            $table->unsignedBigInteger('deposit_cents')->nullable();
+            $table->unsignedBigInteger('recurring_cents')->nullable();
+            $table->string('recurring_period', 16)->nullable();
+            $table->unsignedBigInteger('first_year_value_cents')->default(0);
+            $table->text('recurring_options')->nullable();
+            $table->text('payment_terms')->nullable();
+            $table->text('offer_details')->nullable();
+            $table->date('offer_valid_until')->nullable();
+            $table->date('expected_close_date')->nullable();
+
+            // Operational state.
+            $table->string('sub_status', 160)->nullable();
+            $table->text('next_step')->nullable();
+            $table->text('blocker')->nullable();
+            $table->text('missing_data')->nullable();
+            $table->text('call_context')->nullable();
+            $table->text('closing_tip')->nullable();
+
+            // Internal approval.
+            $table->boolean('approval_required')->default(false);
+            $table->string('approval_status', 16)->nullable();
+            Columns::user($table, 'approver_id');
+            $table->text('approval_note')->nullable();
+            $table->timestamp('approval_decided_at')->nullable();
+
+            // Signature and payment, changed only with an evidence.
+            $table->string('signature_status', 16)->default('not_verified');
+            $table->string('signature_evidence', 500)->nullable();
+            $table->timestamp('signature_verified_at')->nullable();
+            Columns::user($table, 'signature_verified_by');
+            $table->string('payment_status', 16)->default('not_verified');
+            $table->unsignedBigInteger('amount_collected_cents')->nullable();
+            $table->string('payment_evidence', 500)->nullable();
+            $table->timestamp('payment_verified_at')->nullable();
+            Columns::user($table, 'payment_verified_by');
+
+            // Closing and commission: the value is cents for an amount, basis points for a percent.
+            $table->string('lost_reason', 32)->nullable();
+            $table->text('lost_note')->nullable();
+            $table->timestamp('won_at')->nullable();
+            $table->timestamp('lost_at')->nullable();
+            $table->string('commission_type', 16)->nullable();
+            $table->unsignedBigInteger('commission_value')->nullable();
+            $table->string('commission_note', 255)->nullable();
+
+            $table->json('custom_values')->nullable();
+
+            $table->timestamp('stage_entered_at')->nullable();
+            $table->timestamp('last_activity_at')->nullable();
+            $table->dateTime('next_activity_at')->nullable();
+            $table->dateTime('last_contacted_at')->nullable();
+            $table->date('data_verified_at')->nullable();
+
+            Columns::user($table, 'created_by');
+            Columns::user($table, 'updated_by');
+            $table->timestamps();
+
+            $table->unique(['workspace_key', 'external_ref']);
+            $table->unique(['origin_type', 'origin_id']);
+            $table->index(['pipeline_id', 'stage_id', 'position']);
+            $table->index('next_activity_at');
+            $table->index('expected_close_date');
+        });
+
+        Schema::create($t('deal_person'), function (Blueprint $table) use ($t): void {
+            $table->id();
+            $table->foreignId('deal_id')->constrained($t('deals'))->cascadeOnDelete();
+            $table->foreignId('person_id')->constrained($t('people'))->cascadeOnDelete();
+            $table->string('role', 24)->nullable();
+            $table->boolean('is_primary')->default(false);
+            $table->timestamps();
+
+            $table->unique(['deal_id', 'person_id']);
+            $table->index('person_id');
+        });
+
+        Schema::create($t('stage_visits'), function (Blueprint $table) use ($t): void {
+            $table->id();
+            $table->foreignId('deal_id')->constrained($t('deals'))->cascadeOnDelete();
+            $table->foreignId('pipeline_id')->index()->constrained($t('pipelines'))->cascadeOnDelete();
+            // A stage deleted later keeps its visits, with its name, for the time spent in it.
+            $table->foreignId('stage_id')->nullable()->constrained($t('stages'))->nullOnDelete();
+            $table->string('stage_name', 120)->nullable();
+            $table->timestamp('entered_at');
+            $table->timestamp('left_at')->nullable();
+            Columns::user($table, 'entered_by');
+
+            $table->index(['deal_id', 'left_at']);
+            $table->index(['stage_id', 'left_at']);
+        });
+
+        Schema::create($t('deal_events'), function (Blueprint $table) use ($t): void {
+            $table->id();
+            $table->foreignId('deal_id')->constrained($t('deals'))->cascadeOnDelete();
+            Columns::user($table, 'user_id');
+            $table->string('type', 24);
+            $table->string('field', 48)->nullable();
+            $table->json('from')->nullable();
+            $table->json('to')->nullable();
+            $table->timestamp('created_at')->nullable();
+
+            $table->index(['deal_id', 'created_at']);
+        });
+
+        Schema::create($t('workspace_settings'), function (Blueprint $table) use ($t): void {
+            $table->id();
+            Columns::workspace($table, key: true);
+            $table->foreignId('entry_stage_id')->nullable()->index()->constrained($t('stages'))->nullOnDelete();
+            $table->json('custom_fields')->nullable();
+            $table->json('options')->nullable();
+            Columns::user($table, 'updated_by');
+            $table->timestamps();
+
+            $table->unique('workspace_key');
+        });
+
+        Schema::create($t('activities'), function (Blueprint $table) use ($t): void {
+            $table->id();
+            Columns::workspace($table);
+            $table->foreignId('deal_id')->nullable()->constrained($t('deals'))->cascadeOnDelete();
+            $table->foreignId('company_id')->nullable()->index()->constrained($t('companies'))->cascadeOnDelete();
+            // The person an activity is on, or the person a deal activity is with.
+            $table->foreignId('person_id')->nullable()->index()->constrained($t('people'))->nullOnDelete();
+            $table->string('type', 16);
+            $table->string('title', 200);
+            $table->text('notes')->nullable();
+            // dateTime, not timestamp: dates typed by users (or read from emails) may fall outside 1970-2038.
+            $table->dateTime('due_at');
+            $table->boolean('has_time')->default(true);
+            $table->unsignedSmallInteger('remind_minutes')->nullable();
+            $table->timestamp('reminded_at')->nullable();
+            Columns::user($table, 'assigned_to');
+            $table->timestamp('done_at')->nullable();
+            Columns::user($table, 'done_by');
+            $table->text('outcome')->nullable();
+            Columns::user($table, 'created_by');
+            $table->timestamps();
+
+            $table->index(['assigned_to', 'done_at', 'due_at']);
+            $table->index(['deal_id', 'done_at', 'due_at']);
+            $table->index(['done_at', 'reminded_at', 'due_at']);
+        });
+
+        Schema::create($t('notes'), function (Blueprint $table) use ($t): void {
+            $table->id();
+            Columns::workspace($table);
+            $table->foreignId('deal_id')->nullable()->constrained($t('deals'))->cascadeOnDelete();
+            $table->foreignId('company_id')->nullable()->index()->constrained($t('companies'))->cascadeOnDelete();
+            $table->foreignId('person_id')->nullable()->index()->constrained($t('people'))->cascadeOnDelete();
+            Columns::user($table, 'user_id');
+            $table->text('body');
+            $table->json('mentions')->nullable();
+            $table->timestamp('pinned_at')->nullable();
+            $table->timestamps();
+
+            $table->index(['deal_id', 'created_at']);
+        });
+
+        Schema::create($t('documents'), function (Blueprint $table) use ($t): void {
+            $table->id();
+            Columns::workspace($table);
+            $table->foreignId('deal_id')->nullable()->constrained($t('deals'))->cascadeOnDelete();
+            $table->foreignId('company_id')->nullable()->index()->constrained($t('companies'))->cascadeOnDelete();
+            $table->string('kind', 24);
+            $table->string('name', 255);
+            $table->string('disk', 64);
+            $table->string('path', 500);
+            $table->string('mime', 127)->nullable();
+            $table->unsignedBigInteger('size')->default(0);
+            $table->unsignedSmallInteger('version')->default(1);
+            $table->date('document_date')->nullable();
+            $table->date('valid_until')->nullable();
+            Columns::user($table, 'uploaded_by');
+            $table->timestamps();
+
+            $table->index(['deal_id', 'kind']);
+        });
+
+        Schema::create($t('emails'), function (Blueprint $table) use ($t): void {
+            $table->id();
+            Columns::workspace($table, key: true);
+            $table->foreignId('deal_id')->nullable()->constrained($t('deals'))->cascadeOnDelete();
+            $table->foreignId('person_id')->nullable()->constrained($t('people'))->nullOnDelete();
+            $table->string('direction', 8);
+            $table->string('status', 16);
+            $table->string('from_email', 191);
+            $table->string('from_name', 191)->nullable();
+            $table->string('reply_to', 191)->nullable();
+            $table->json('to');
+            $table->json('cc')->nullable();
+            $table->string('subject', 255);
+            $table->longText('body_text')->nullable();
+            $table->string('message_id', 255);
+            $table->string('in_reply_to', 255)->nullable();
+            $table->text('references')->nullable();
+            Columns::user($table, 'sent_by');
+            $table->dateTime('sent_at')->nullable();
+            $table->text('error')->nullable();
+            $table->timestamps();
+
+            $table->unique(['workspace_key', 'message_id']);
+            $table->index('message_id');
+            $table->index(['deal_id', 'sent_at']);
+            $table->index(['person_id', 'sent_at']);
+        });
+
+        Schema::create($t('email_templates'), function (Blueprint $table): void {
+            $table->id();
+            Columns::workspace($table, key: true);
+            $table->string('name', 120);
+            $table->string('subject', 255);
+            $table->text('body');
+            Columns::user($table, 'created_by');
+            $table->timestamps();
+
+            $table->unique(['workspace_key', 'name']);
+        });
+
+        Schema::create($t('saved_views'), function (Blueprint $table): void {
+            $table->id();
+            Columns::user($table, 'user_id', nullable: false);
+            Columns::workspace($table, key: true);
+            $table->string('name', 80);
+            $table->boolean('shared')->default(false);
+            $table->json('state');
+            $table->timestamps();
+
+            $table->unique(['user_id', 'workspace_key', 'name']);
+            $table->index(['workspace_key', 'shared']);
+        });
+
+        Schema::create($t('imports'), function (Blueprint $table) use ($t): void {
+            $table->id();
+            Columns::workspace($table);
+            Columns::user($table, 'user_id');
+            $table->foreignId('pipeline_id')->nullable()->index()->constrained($t('pipelines'))->nullOnDelete();
+            $table->string('original_filename', 255);
+            $table->string('disk', 64);
+            $table->string('stored_path', 255);
+            $table->string('sheet', 120)->nullable();
+            $table->string('status', 16);
+            $table->json('mapping')->nullable();
+            $table->unsignedInteger('total_rows')->default(0);
+            $table->unsignedInteger('created_count')->default(0);
+            $table->unsignedInteger('updated_count')->default(0);
+            $table->unsignedInteger('rejected_count')->default(0);
+            $table->json('rejected')->nullable();
+            $table->json('warnings')->nullable();
+            $table->text('error')->nullable();
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('finished_at')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        foreach (['imports', 'saved_views', 'email_templates', 'emails', 'documents', 'notes', 'activities', 'workspace_settings', 'deal_events', 'stage_visits', 'deal_person', 'deals', 'people', 'companies', 'stages', 'pipelines'] as $name) {
+            Schema::dropIfExists(Crm::table($name));
+        }
+    }
+};

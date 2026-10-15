@@ -1,0 +1,105 @@
+{
+    "name": "sellinnate/sales-crm",
+    "description": "Sales pipeline CRM for Laravel: kanban board, deals, companies & people, activities, notes, email, documents, import, reports, saved views and MCP tools. Headless core with an optional Livewire UI.",
+    "keywords": [
+        "sellinnate",
+        "laravel",
+        "crm",
+        "sales",
+        "pipeline",
+        "kanban",
+        "deals",
+        "livewire"
+    ],
+    "homepage": "https://github.com/Sellinnate/laravel-sales-crm",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Filippo Calabrese",
+            "email": "filippo@selli.io",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "docs": "https://laravel-sales-crm.selli.io",
+        "issues": "https://github.com/Sellinnate/laravel-sales-crm/issues",
+        "source": "https://github.com/Sellinnate/laravel-sales-crm"
+    },
+    "require": {
+        "php": "^8.2",
+        "illuminate/contracts": "^11.0||^12.0||^13.0",
+        "illuminate/database": "^11.0||^12.0||^13.0",
+        "illuminate/support": "^11.0||^12.0||^13.0",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "require-dev": {
+        "directorytree/imapengine": "^1.20",
+        "giggsey/libphonenumber-for-php": "^8.13||^9.0",
+        "larastan/larastan": "^3.0",
+        "laravel/mcp": "^0.5||^1.0",
+        "laravel/pint": "^1.14",
+        "livewire/livewire": "^3.5||^4.0",
+        "nunomaduro/collision": "^8.1",
+        "openspout/openspout": "^4.24||^5.0",
+        "orchestra/testbench": "^9.13||^10.0||^11.0",
+        "pestphp/pest": "^3.0||^4.0",
+        "pestphp/pest-plugin-laravel": "^3.0||^4.0",
+        "pestphp/pest-plugin-livewire": "^3.0||^4.0",
+        "phpstan/extension-installer": "^1.4",
+        "phpstan/phpstan-deprecation-rules": "^2.0"
+    },
+    "suggest": {
+        "livewire/livewire": "Required for the optional web UI (kanban board, panels, settings, import, reports): ^3.5 or ^4.0",
+        "openspout/openspout": "Import and export XLSX spreadsheets (CSV works without it)",
+        "laravel/mcp": "Expose the CRM to AI agents as MCP tools",
+        "directorytree/imapengine": "Read replies from an IMAP mailbox with the `imap` inbound driver",
+        "giggsey/libphonenumber-for-php": "Normalise phone numbers to E.164 with full libphonenumber rules"
+    },
+    "autoload": {
+        "psr-4": {
+            "Sellinnate\\SalesCrm\\": "src/",
+            "Sellinnate\\SalesCrm\\Database\\Factories\\": "database/factories/",
+            "Sellinnate\\SalesCrm\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Sellinnate\\SalesCrm\\Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": "@composer run prepare",
+        "prepare": "@php vendor/bin/testbench package:discover --ansi",
+        "analyse": "vendor/bin/phpstan analyse",
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage",
+        "format": "vendor/bin/pint",
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php vendor/bin/testbench workbench:build --ansi",
+            "@php vendor/bin/testbench serve --ansi"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "phpstan/extension-installer": true
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Sellinnate\\SalesCrm\\SalesCrmServiceProvider"
+            ],
+            "aliases": {
+                "SalesCrm": "Sellinnate\\SalesCrm\\Facades\\SalesCrm"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
