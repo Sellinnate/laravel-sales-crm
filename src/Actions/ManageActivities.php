@@ -45,6 +45,11 @@ class ManageActivities
     {
         if ($by !== null) {
             Gate::forUser($by)->authorize('update', $target);
+
+            // The activity itself too: an activity of a hidden deal may also name a person the user sees.
+            if ($activity !== null) {
+                Gate::forUser($by)->authorize('update', $activity);
+            }
         }
 
         if ($activity !== null && ! $this->belongsTo($activity, $target)) {

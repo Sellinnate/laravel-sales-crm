@@ -4,6 +4,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
+use Sellinnate\SalesCrm\Actions\ManageActivities;
 use Sellinnate\SalesCrm\Actions\MoveDeal;
 use Sellinnate\SalesCrm\Actions\UpdateDeal;
 use Sellinnate\SalesCrm\Authorization\Access;
@@ -174,4 +175,16 @@ it('validates the records of the CRM on its own database connection', function (
     expect($rules->filter(fn (string $rule): bool => str_starts_with($rule, 'exists:') || str_starts_with($rule, 'unique:'))->values()->all())
         ->not->toBeEmpty()
         ->each->toContain(':crm.');
+});
+
+it('refuses to change an activity of a hidden deal through the person it names', function () {
+    config(['sales-crm.authorization.deal_visibility' => 'owner']);
+    app()->forgetScopedInstances();
+    $person = $this->alphaDeal->people->first();
+    $hidden = SalesCrm::for($this->alpha)->createDeal(['title' => 'Hidden renewal', 'owner_id' => $this->both->id], $this->both);
+    $activity = SalesCrm::scheduleActivity($hidden, ['type' => 'call', 'title' => 'Secret call', 'due_date' => now()->toDateString(), 'person_id' => $person->id], $this->both);
+
+    expect(fn () => app(ManageActivities::class)->save($person, ['type' => 'call', 'title' => 'Hijacked', 'due_date' => now()->toDateString()], $this->alice, $activity))
+        ->toThrow(AuthorizationException::class)
+        ->and($activity->fresh()->title)->toBe('Secret call');
 });
