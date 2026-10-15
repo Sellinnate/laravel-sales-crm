@@ -1,0 +1,29 @@
+{
+  "name": "laravel-sales-crm",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Documentation site and UI assets of the sellinnate/sales-crm Laravel package.",
+  "scripts": {
+    "docs:dev": "docmd dev",
+    "docs:build": "docmd build",
+    "css:build": "tailwindcss -i resources/css/sales-crm.css -o resources/dist/sales-crm.css --minify",
+    "css:watch": "tailwindcss -i resources/css/sales-crm.css -o resources/dist/sales-crm.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sellinnate/laravel-sales-crm.git"
+  },
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Sellinnate/laravel-sales-crm/issues"
+  },
+  "homepage": "https://laravel-sales-crm.selli.io",
+  "dependencies": {
+    "@mgks/docmd": "^0.8.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "tailwindcss": "^4.1.0"
+  }
+}

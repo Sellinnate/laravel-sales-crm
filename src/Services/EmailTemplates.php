@@ -32,6 +32,14 @@ class EmailTemplates
     public function __construct(private Access $access) {}
 
     /**
+     * The variables as they are written in a template: «{{first_name}} {{last_name}} …».
+     */
+    public static function placeholders(): string
+    {
+        return implode(' ', array_map(fn (string $variable): string => '{{'.$variable.'}}', self::VARIABLES));
+    }
+
+    /**
      * The text with the variables of the deal written in.
      */
     public function render(string $text, Deal $deal, ?Person $person, ?Authenticatable $sender): string

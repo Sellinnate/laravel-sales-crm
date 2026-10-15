@@ -4,7 +4,6 @@ namespace Sellinnate\SalesCrm;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
@@ -77,7 +76,6 @@ class SalesCrmServiceProvider extends PackageServiceProvider
 
         Event::subscribe(SendNotifications::class);
 
-        Blade::anonymousComponentPath(__DIR__.'/../resources/views/components', 'sales-crm');
 
         $this->registerRoutes();
 
