@@ -45,9 +45,13 @@ $email->status;   // EmailStatus::Queued
   semicolons or spaces.
 - The email is stored as **queued** and delivered by a queued job through
   Laravel's mailer, after the transaction commits. It is retried 3 times (after
-  1 and 5 minutes). On success it becomes **sent**, fires `EmailSent` and
-  updates the deal's last contact; after the last failure it becomes **failed**
-  and fires `EmailFailed`.
+  1 and 5 minutes). The job marks it **sending** before handing it to the
+  mailer, so a retry never sends it twice; if the mailer refuses it, it goes
+  back to **queued** for the next attempt. On success it becomes **sent**,
+  fires `EmailSent` and updates the deal's last contact; after the last failure
+  it becomes **failed** and fires `EmailFailed`. An email the mailer accepted
+  but that couldn't be recorded as sent (the database away) stays **sending**:
+  it left, and it is not sent again.
 - Every email gets its own `Message-ID`. With `reply_to_id` it also carries the
   `In-Reply-To` and `References` of that thread, so it shows up as a reply in
   the customer's mail client.
@@ -276,7 +280,7 @@ $deal->emails()->latest('sent_at')->get();
 $person->emails;
 
 $email->direction;   // EmailDirection::Outbound ('out') or Inbound ('in')
-$email->status;      // queued, sent, failed, received
+$email->status;      // queued, sending, sent, failed, received
 $email->body_text;
 ```
 

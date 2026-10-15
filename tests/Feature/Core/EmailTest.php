@@ -336,3 +336,21 @@ it('keeps ordinary emails that only ask not to be auto-answered, and tells apart
         ->and($second)->not->toBeNull()
         ->and($second?->message_id)->not->toBe($first?->message_id);
 });
+
+it('never sends an email twice when recording it as sent fails', function () {
+    Mail::fake();
+    config(['queue.default' => 'null']);
+    $email = SalesCrm::sendEmail($this->deal, ['to' => 'jane@acme.example', 'subject' => 'Offer', 'body' => 'Here it is'], $this->seller);
+    $failures = 3;
+    Email::saving(function (Email $saving) use (&$failures): void {
+        if ($saving->status === EmailStatus::Sent && $failures-- > 0) {
+            throw new RuntimeException('Lock wait timeout');
+        }
+    });
+
+    app()->call([new DeliverEmail($email->id), 'handle']);
+    app()->call([new DeliverEmail($email->id), 'handle']);
+
+    Mail::assertSent(DealEmail::class, 1);
+    expect($email->fresh()->status)->toBe(EmailStatus::Sending);
+});

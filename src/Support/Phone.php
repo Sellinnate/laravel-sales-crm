@@ -19,7 +19,8 @@ final class Phone
      */
     public static function normalize(?string $value): ?string
     {
-        $value = trim((string) $value);
+        // A number written by a spreadsheet as text ('+39 333…) is still the number.
+        $value = ltrim(trim((string) $value), "'");
 
         if ($value === '' || preg_match('/[a-z]{2,}/i', $value) === 1) {
             return null;

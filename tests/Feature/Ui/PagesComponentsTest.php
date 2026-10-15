@@ -2,6 +2,7 @@
 
 use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
@@ -14,6 +15,7 @@ use Sellinnate\SalesCrm\Livewire\PersonPage;
 use Sellinnate\SalesCrm\Livewire\RecordFeed;
 use Sellinnate\SalesCrm\Livewire\Reports;
 use Sellinnate\SalesCrm\Livewire\Settings;
+use Sellinnate\SalesCrm\Models\Activity;
 use Sellinnate\SalesCrm\Models\Company;
 use Sellinnate\SalesCrm\Models\Deal;
 use Sellinnate\SalesCrm\Models\Import as ImportModel;
@@ -38,6 +40,27 @@ it('completes activities from the agenda', function () {
         ->assertDontSee('Overdue call');
 
     expect($overdue->fresh()->isDone())->toBeTrue();
+});
+
+it('shows today and the next days however many activities are late, without a query per activity', function () {
+    $deal = SalesCrm::shared()->createDeal(['title' => 'Busy deal', 'person' => ['first_name' => 'Jane', 'email' => 'jane@acme.example', 'mobile' => '+39 333 1234567']], $this->seller);
+    $rows = array_map(fn (int $i): array => [
+        'deal_id' => $deal->id, 'type' => 'call', 'title' => 'Late '.$i, 'due_at' => CarbonImmutable::today()->subDays(2)->setTime(9, 0), 'has_time' => true,
+        'assigned_to' => $this->seller->id, 'created_at' => now(), 'updated_at' => now(),
+    ], range(1, 260));
+    Activity::query()->insert($rows);
+    SalesCrm::scheduleActivity($deal, ['type' => 'meeting', 'title' => 'Tomorrow meeting', 'due_date' => CarbonImmutable::tomorrow()->toDateString()], $this->seller);
+    $this->actingAs($this->seller);
+
+    DB::enableQueryLog();
+    $agenda = Livewire::test(Agenda::class)->assertSee(['Tomorrow meeting', 'tel:+393331234567'], false);
+    $queries = count(DB::getQueryLog());
+
+    expect($agenda->instance()->groups['upcoming']->pluck('title')->all())->toContain('Tomorrow meeting')
+        ->and($agenda->instance()->groups['overdue'])->toHaveCount(200)
+        ->and($queries)->toBeLessThan(30);
+
+    Livewire::test(Agenda::class)->set('scope', 'all')->assertSee('Sam Seller');
 });
 
 it('creates companies and people, showing the possible duplicate', function () {

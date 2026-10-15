@@ -13,7 +13,7 @@ return [
         'partner' => 'Partner', 'website' => 'Website', 'integration' => 'Integration', 'import' => 'Import', 'other' => 'Other',
     ],
     'email_direction' => ['out' => 'Sent', 'in' => 'Received'],
-    'email_status' => ['queued' => 'Sending', 'sent' => 'Sent', 'failed' => 'Not sent', 'received' => 'Received'],
+    'email_status' => ['queued' => 'Sending', 'sending' => 'Sending', 'sent' => 'Sent', 'failed' => 'Not sent', 'received' => 'Received'],
     'document_kind' => [
         'quote' => 'Quote', 'contract' => 'Contract', 'signature_evidence' => 'Signature evidence',
         'payment_evidence' => 'Payment evidence', 'other' => 'Other',

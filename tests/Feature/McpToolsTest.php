@@ -87,3 +87,31 @@ it('refuses users without access to the CRM', function () {
 
     SalesCrmServer::actingAs($this->seller)->tool(CrmDealsListTool::class)->assertHasErrors(['not allowed']);
 });
+
+it('refuses every write tool on a deal of another workspace, leaving it as it was', function () {
+    useTeams();
+    $alice = crmUser();
+    $bob = crmUser();
+    crmTeam('Alpha', $alice);
+    $beta = crmTeam('Beta', $bob);
+    $foreign = SalesCrm::for($beta)->createDeal(['title' => 'Beta secret', 'next_step' => 'Untouched'], $bob);
+    $stage = crmStage($foreign->pipeline, 'Qualified');
+
+    foreach ([
+        [CrmDealGetTool::class, ['deal_id' => $foreign->id]],
+        [CrmDealUpdateTool::class, ['deal_id' => $foreign->id, 'fields' => ['next_step' => 'Hijacked']]],
+        [CrmDealMoveTool::class, ['deal_id' => $foreign->id, 'stage_id' => $stage->id]],
+        [CrmNoteAddTool::class, ['deal_id' => $foreign->id, 'body' => 'Hijacked']],
+        [CrmActivityAddTool::class, ['deal_id' => $foreign->id, 'type' => 'call', 'title' => 'Hijacked', 'due_date' => now()->toDateString()]],
+        [CrmDealCreateTool::class, ['title' => 'Intruder', 'pipeline_id' => $foreign->pipeline_id]],
+    ] as [$tool, $arguments]) {
+        SalesCrmServer::actingAs($alice)->tool($tool, $arguments)->assertHasErrors();
+    }
+
+    $foreign = $foreign->fresh();
+    expect($foreign->next_step)->toBe('Untouched')
+        ->and($foreign->stage_id)->not->toBe($stage->id)
+        ->and($foreign->notes()->count())->toBe(0)
+        ->and($foreign->activities()->count())->toBe(0)
+        ->and(Deal::query()->where('title', 'Intruder')->exists())->toBeFalse();
+});

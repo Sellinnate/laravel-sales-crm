@@ -42,7 +42,20 @@ class SpreadsheetExport
     {
         $text = is_scalar($value) ? (string) $value : '';
 
-        return $text !== '' && in_array($text[0], ['=', '+', '-', '@', "\t", "\r"], true) ? "'".$text : $text;
+        // Numbers and phone numbers (+39 333…, -12.5) stay as they are: no formula can hide in them.
+        if ($text === '' || preg_match('/^[+-]?[\d\s().\/-]+$/', $text) === 1) {
+            return $text;
+        }
+
+        return in_array($text[0], ['=', '+', '-', '@', "\t", "\r"], true) ? "'".$text : $text;
+    }
+
+    /**
+     * A cell exported by neutralize() read back (the file of the rejected rows imported again).
+     */
+    public static function restore(string $text): string
+    {
+        return strlen($text) > 1 && $text[0] === "'" && in_array($text[1], ['=', '+', '-', '@', "\t", "\r"], true) ? substr($text, 1) : $text;
     }
 
     /**

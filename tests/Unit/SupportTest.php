@@ -67,7 +67,14 @@ it('normalises the values of custom fields by type', function () {
 it('escapes search patterns and neutralises spreadsheet formulas', function () {
     expect(Search::contains('50%_off!'))->toBe('%50!%!_off!!%')
         ->and(SpreadsheetExport::neutralize('=SUM(A1)'))->toBe("'=SUM(A1)")
-        ->and(SpreadsheetExport::neutralize('+39 333'))->toBe("'+39 333")
+        ->and(SpreadsheetExport::neutralize('+39 333 123 4567'))->toBe('+39 333 123 4567')
+        ->and(SpreadsheetExport::neutralize('-12.5'))->toBe('-12.5')
+        ->and(SpreadsheetExport::neutralize('+cmd|calc'))->toBe("'+cmd|calc")
+        ->and(SpreadsheetExport::neutralize('-2+3+cmd'))->toBe("'-2+3+cmd")
+        ->and(SpreadsheetExport::neutralize('@SUM(1)'))->toBe("'@SUM(1)")
+        ->and(SpreadsheetExport::restore("'=SUM(A1)"))->toBe('=SUM(A1)')
+        ->and(SpreadsheetExport::restore("'quoted"))->toBe("'quoted")
+        ->and(Phone::normalize("'+39 333 1234567"))->toBe(Phone::normalize('+39 333 1234567'))
         ->and(SpreadsheetExport::neutralize('Acme'))->toBe('Acme');
 });
 

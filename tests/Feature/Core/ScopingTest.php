@@ -128,7 +128,7 @@ it('hides the activities and notes of the deals a user does not see, in the agen
         ->and(Note::query()->visibleTo($this->both)->where('body', 'Secret note')->exists())->toBeTrue();
 
     Livewire::actingAs($this->alice)->test(Agenda::class)
-        ->set('scope', 'everybody')
+        ->set('scope', 'all')
         ->assertSee('Open call')
         ->assertDontSee('Secret call')
         ->assertDontSee('Both own');
@@ -255,4 +255,18 @@ it('never stores the email of a user in a workspace they do not work in', functi
         ->and($reply)->toBeNull()
         ->and(Email::query()->whereIn('message_id', ['bcc-x@vendor.example', 'reply-x@vendor.example'])->count())->toBe(0)
         ->and($sent->exists)->toBeTrue();
+});
+
+it('never creates pipelines from the import wizard where the user does not manage', function () {
+    $this->both->forceFill(['is_admin' => false])->save();
+    Gate::define('sales-crm.manage', fn ($user, $workspace = null): bool => $user->is($this->both) && $workspace?->is($this->alpha));
+    $before = Pipeline::query()->count();
+
+    $wizard = Livewire::actingAs($this->both)->test(ImportPage::class);
+    $wizard->set('workspace', Workspace::of($this->beta)?->key());
+    $wizard->set('workspace', 'nonsense|42');
+
+    expect($wizard->instance()->pipelines)->toHaveCount(0)
+        ->and(Pipeline::query()->count())->toBe($before)
+        ->and(Pipeline::query()->whereNull('workspace_type')->exists())->toBeFalse();
 });

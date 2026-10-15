@@ -203,3 +203,14 @@ it('matches and completes the companies by the VAT number and the website of the
         ->and($quartz?->vat_number)->toBe('IT09876543210')
         ->and($quartz?->domain)->toBe('quartzlabs.example');
 });
+
+it('keeps as many tags of a row as the deals allow', function () {
+    config(['sales-crm.deals.max_tags' => 3]);
+    $file = csvFile('tags.csv', [['Title', 'Tags'], ['Tagged', 'a, b, c, d, e']]);
+
+    $import = $this->imports->upload(null, $this->pipeline, $file, $this->admin);
+    $this->imports->map($import, ['columns' => [0 => 'title', 1 => 'tags']], $this->admin);
+    $this->imports->run($import->fresh(), $this->admin);
+
+    expect(Deal::query()->where('title', 'Tagged')->first()?->tags)->toBe(['a', 'b', 'c']);
+});

@@ -32,7 +32,7 @@
                     </header>
                     <div class="flex flex-col divide-y divide-line">
                         @forelse ($this->groups[$group] as $activity)
-                            @php $person = $activity->person ?? $activity->deal?->people()->first(); @endphp
+                            @php $person = $activity->person ?? $activity->deal?->people->first(); @endphp
                             <div class="flex items-start gap-3 px-4 py-2.5" wire:key="agenda-{{ $activity->id }}">
                                 <button type="button" class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-line-strong text-transparent hover:border-success hover:text-success" wire:click="complete({{ $activity->id }})" title="{{ __('sales-crm::ui.mark_done') }}" aria-label="{{ __('sales-crm::ui.mark_done') }}" data-test="agenda-complete-{{ $activity->id }}"><x-sales-crm::icon name="check" :size="12" /></button>
                                 <div class="min-w-0 flex-auto">

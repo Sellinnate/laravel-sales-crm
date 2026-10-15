@@ -13,7 +13,7 @@ return [
         'partner' => 'Partner', 'website' => 'Sito web', 'integration' => 'Integrazione', 'import' => 'Import', 'other' => 'Altro',
     ],
     'email_direction' => ['out' => 'Inviata', 'in' => 'Ricevuta'],
-    'email_status' => ['queued' => 'In invio', 'sent' => 'Inviata', 'failed' => 'Non inviata', 'received' => 'Ricevuta'],
+    'email_status' => ['queued' => 'In invio', 'sending' => 'In invio', 'sent' => 'Inviata', 'failed' => 'Non inviata', 'received' => 'Ricevuta'],
     'document_kind' => [
         'quote' => 'Preventivo', 'contract' => 'Contratto', 'signature_evidence' => 'Evidenza di firma',
         'payment_evidence' => 'Evidenza di incasso', 'other' => 'Altro',

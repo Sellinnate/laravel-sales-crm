@@ -10,6 +10,7 @@ use ReflectionClass;
 use ReflectionProperty;
 use RuntimeException;
 use Sellinnate\SalesCrm\Exceptions\ImportException;
+use Sellinnate\SalesCrm\Services\SpreadsheetExport;
 
 /**
  * Reads the rows of a CSV or XLSX file stored on a disk. CSV needs nothing (delimiter, BOM and
@@ -125,7 +126,7 @@ class SpreadsheetReader
 
             while (($cells = fgetcsv($handle, null, $delimiter, '"', '')) !== false) {
                 $number++;
-                $cells = array_map(fn (mixed $cell): string => self::utf8(trim((string) $cell)), $cells);
+                $cells = array_map(fn (mixed $cell): string => SpreadsheetExport::restore(self::utf8(trim((string) $cell))), $cells);
 
                 if ($number === 1) {
                     $cells[0] = (string) preg_replace('/^\x{FEFF}/u', '', $cells[0]);

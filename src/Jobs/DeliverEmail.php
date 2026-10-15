@@ -55,14 +55,30 @@ class DeliverEmail implements ShouldQueue
         Cache::lock('sales-crm:email:'.$this->emailId, 120)->block(30, function () use ($state): void {
             $email = Email::query()->find($this->emailId);
 
-            if ($email === null || $email->status !== EmailStatus::Queued) {
+            // Claimed before the mailer sees it: once the message may have left, no retry sends it again.
+            if ($email === null || Email::query()->whereKey($email->id)->where('status', EmailStatus::Queued->value)->update(['status' => EmailStatus::Sending->value]) === 0) {
                 return;
             }
 
-            Mail::mailer($this->mailer)->send(new DealEmail($email));
+            try {
+                Mail::mailer($this->mailer)->send(new DealEmail($email));
+            } catch (Throwable $exception) {
+                // Refused by the mailer: not sent, back in the queue for the next attempt.
+                Email::query()->whereKey($email->id)->where('status', EmailStatus::Sending->value)->update(['status' => EmailStatus::Queued->value]);
+
+                throw $exception;
+            }
 
             $now = CarbonImmutable::now();
-            $email->forceFill(['status' => EmailStatus::Sent, 'sent_at' => $now, 'error' => null])->save();
+
+            try {
+                retry(3, fn () => $email->forceFill(['status' => EmailStatus::Sent, 'sent_at' => $now, 'error' => null])->save(), 200);
+            } catch (Throwable $exception) {
+                // Sent, though not recorded (the database away): it stays "sending", never sent twice.
+                report($exception);
+
+                return;
+            }
 
             try {
                 if ($email->deal_id !== null) {

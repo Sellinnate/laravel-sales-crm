@@ -274,6 +274,12 @@ class Import extends Component
     public function pipelines(): Collection
     {
         $workspace = $this->workspaceFromKey($this->workspace);
+
+        // The workspace comes from the browser: nothing read, nothing created where the user doesn't manage.
+        if (($workspace === null && $this->access()->resolver()->enabled()) || ! $this->canManage($workspace)) {
+            return new Collection;
+        }
+
         app(DefaultPipeline::class)->ensureFor($workspace, $this->viewer());
 
         return Pipeline::query()->inWorkspace($workspace)->ordered()->get();

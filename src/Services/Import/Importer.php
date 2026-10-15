@@ -309,7 +309,7 @@ class Importer
         }
 
         if (($tags = $first('tags')) !== null) {
-            $deal['tags'] = array_slice(array_values(array_filter(array_map(fn (string $tag): string => Str::limit(trim($tag), 30, ''), preg_split('/[,;]/', $tags) ?: []))), 0, 10);
+            $deal['tags'] = array_slice(array_values(array_filter(array_map(fn (string $tag): string => Str::limit(trim($tag), 30, ''), preg_split('/[,;]/', $tags) ?: []))), 0, max(1, (int) config('sales-crm.deals.max_tags', 10)));
         }
 
         foreach (['amount_once', 'deposit'] as $field) {

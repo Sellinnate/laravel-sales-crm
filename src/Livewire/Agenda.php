@@ -64,17 +64,19 @@ class Agenda extends Component
     public function groups(): array
     {
         $now = CarbonImmutable::now();
-        $activities = Activity::query()
+        $query = fn (): Builder => Activity::query()
             ->visibleTo($this->viewer())
             ->whereNull('done_at')
             ->when($this->scope === 'mine', fn (Builder $query) => $query->where('assigned_to', Crm::userKey($this->viewer())))
             ->when($this->type !== '', fn (Builder $query) => $query->where('type', $this->type))
             ->when($this->workspace !== '' && ($workspace = $this->workspaceFromKey($this->workspace)) !== null, fn (Builder $query) => $query->inWorkspace($this->workspaceFromKey($this->workspace)))
-            ->where('due_at', '<=', $now->addDays(7)->endOfDay())
-            ->with(['deal', 'company', 'person', 'assignee'])
-            ->orderBy('due_at')
-            ->limit(500)
-            ->get();
+            // The primary contact of the deal comes with it: no query per activity in the view.
+            ->with(['deal.people', 'company', 'person', 'assignee']);
+
+        // Each its own cap: many late activities never hide today and the next days; the latest late first.
+        $late = $query()->where('due_at', '<', $now->startOfDay())->orderByDesc('due_at')->limit(200)->get();
+        $coming = $query()->where('due_at', '>=', $now->startOfDay())->where('due_at', '<=', $now->addDays(7)->endOfDay())->orderBy('due_at')->limit(300)->get();
+        $activities = $late->reverse()->concat($coming)->values();
 
         return [
             'overdue' => $activities->filter(fn (Activity $activity): bool => $activity->state($now) === 'overdue')->values(),

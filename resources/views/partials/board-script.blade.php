@@ -97,7 +97,8 @@
             handle(event) {
                 const target = event.target;
                 const typing = target.closest('input, textarea, select, [contenteditable="true"]');
-                const dialog = document.querySelector('.sales-crm .crm-modal:not([style*="display: none"])');
+                // Not behind an open dialog or deal panel.
+                const dialog = document.querySelector('.sales-crm .crm-modal:not([style*="display: none"]), .sales-crm .crm-slide-over:not([style*="display: none"])');
 
                 if (typing || dialog || event.metaKey || event.ctrlKey || event.altKey) {
                     return;

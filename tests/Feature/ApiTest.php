@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Models\Deal;
@@ -47,4 +48,39 @@ it('creates, updates, moves and deletes deals through the actions', function () 
     $this->actingAs($this->seller)->deleteJson('/api/crm/deals/'.$id)->assertForbidden();
     $this->actingAs(crmUser(['is_admin' => true]))->deleteJson('/api/crm/deals/'.$id)->assertNoContent();
     expect(Deal::query()->find($id))->toBeNull();
+});
+
+it('keeps every route of the API within the workspaces of the user', function () {
+    enableApi();
+    useTeams();
+    $alice = crmUser(['is_admin' => true]);
+    $bob = crmUser();
+    $alpha = crmTeam('Alpha', $alice);
+    $beta = crmTeam('Beta', $bob);
+    $foreign = SalesCrm::for($beta)->createDeal(['title' => 'Beta secret', 'next_step' => 'Untouched'], $bob);
+    $betaStage = crmStage($foreign->pipeline, 'Qualified');
+    SalesCrm::for($alpha)->createDeal(['title' => 'Alpha deal'], $alice);
+
+    $this->actingAs($alice)->getJson('/api/crm/deals')->assertOk()->assertJsonPath('meta.total', 1)->assertDontSee('Beta secret');
+    $this->actingAs($alice)->getJson('/api/crm/pipelines')->assertOk()->assertJsonCount(1, 'data');
+
+    $refused = fn ($response) => expect($response->status())->toBeIn([403, 404, 422]);
+    $refused($this->actingAs($alice)->getJson('/api/crm/deals/'.$foreign->id));
+    $refused($this->actingAs($alice)->patchJson('/api/crm/deals/'.$foreign->id, ['next_step' => 'Hijacked']));
+    $refused($this->actingAs($alice)->postJson('/api/crm/deals/'.$foreign->id.'/move', ['stage_id' => $betaStage->id]));
+    $refused($this->actingAs($alice)->postJson('/api/crm/deals/'.$foreign->id.'/notes', ['body' => 'Hijacked']));
+    $refused($this->actingAs($alice)->postJson('/api/crm/deals/'.$foreign->id.'/activities', ['type' => 'call', 'title' => 'Hijacked', 'due_date' => now()->toDateString()]));
+    $refused($this->actingAs($alice)->deleteJson('/api/crm/deals/'.$foreign->id));
+    $refused($this->actingAs($alice)->postJson('/api/crm/deals', ['title' => 'Intruder', 'pipeline_id' => $foreign->pipeline_id]));
+
+    $foreign = $foreign->fresh();
+    expect($foreign)->not->toBeNull()
+        ->and($foreign->next_step)->toBe('Untouched')
+        ->and($foreign->stage_id)->not->toBe($betaStage->id)
+        ->and($foreign->notes()->count())->toBe(0)
+        ->and($foreign->activities()->count())->toBe(0)
+        ->and(Deal::query()->where('title', 'Intruder')->exists())->toBeFalse();
+
+    Gate::define('sales-crm.access', fn ($user): bool => ! $user->is($bob));
+    $this->actingAs($bob)->getJson('/api/crm/deals')->assertForbidden();
 });
