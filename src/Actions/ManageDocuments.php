@@ -141,7 +141,8 @@ class ManageDocuments
             $document->delete();
         });
 
-        self::remove($document->disk, $document->path, $document->id);
+        // After the commit of the host's transaction too: a rollback keeps both the row and the file.
+        Crm::db()->afterCommit(fn () => self::remove($document->disk, $document->path, $document->id));
     }
 
     /**

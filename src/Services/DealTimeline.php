@@ -70,11 +70,11 @@ class DealTimeline
 
         foreach (array_keys($kinds) as $kind) {
             $counts[$kind] = match ($kind) {
-                'note' => Note::query()->tap(fn (Builder $query) => $this->scope($query, $subject))->count(),
-                'activity' => Activity::query()->tap(fn (Builder $query) => $this->scope($query, $subject))->whereNotNull('done_at')->count(),
-                'email' => $this->emails($subject)->count(),
+                'note' => Note::query()->tap(fn (Builder $query) => $this->scope($query, $subject, $viewer))->count(),
+                'activity' => Activity::query()->tap(fn (Builder $query) => $this->scope($query, $subject, $viewer))->whereNotNull('done_at')->count(),
+                'email' => $this->emails($subject, $viewer)->count(),
                 'event' => $subject instanceof Deal ? DealEvent::query()->where('deal_id', $subject->id)->count() : 0,
-                'document' => Document::query()->tap(fn (Builder $query) => $this->scope($query, $subject))->count(),
+                'document' => Document::query()->tap(fn (Builder $query) => $this->scope($query, $subject, $viewer))->count(),
                 default => $this->provider($kind)?->count($subject, $viewer) ?? 0,
             };
         }
@@ -96,7 +96,7 @@ class DealTimeline
 
         if ($wants('note')) {
             // The pinned notes first, so the limit never leaves out one kept on top.
-            $notes = Note::query()->tap(fn (Builder $query) => $this->scope($query, $subject))->with('author')
+            $notes = Note::query()->tap(fn (Builder $query) => $this->scope($query, $subject, $viewer))->with('author')
                 ->orderByRaw('CASE WHEN pinned_at IS NULL THEN 1 ELSE 0 END')->latest('id')->limit($limit)->get();
 
             foreach ($notes as $note) {
@@ -105,7 +105,7 @@ class DealTimeline
         }
 
         if ($wants('activity')) {
-            $activities = Activity::query()->tap(fn (Builder $query) => $this->scope($query, $subject))->whereNotNull('done_at')->with('doneBy')->latest('done_at')->limit($limit)->get();
+            $activities = Activity::query()->tap(fn (Builder $query) => $this->scope($query, $subject, $viewer))->whereNotNull('done_at')->with('doneBy')->latest('done_at')->limit($limit)->get();
 
             foreach ($activities as $activity) {
                 $entries[] = new TimelineEntry('activity-'.$activity->id, 'activity', $activity->done_at ?? CarbonImmutable::now(), $activity->type->icon(), $activity->type->label().' · '.$activity->title, $activity->outcome, (string) __('sales-crm::ui.timeline.done'), Crm::userName($activity->doneBy) ?: null, false, $activity->id);
@@ -114,7 +114,7 @@ class DealTimeline
 
         if ($wants('email')) {
             // By the moment shown: an old email read late does not push the recent ones out.
-            $emails = $this->emails($subject)->with('sender')->orderByRaw('COALESCE(sent_at, created_at) DESC')->latest('id')->limit($limit)->get();
+            $emails = $this->emails($subject, $viewer)->with('sender')->orderByRaw('COALESCE(sent_at, created_at) DESC')->latest('id')->limit($limit)->get();
 
             foreach ($emails as $email) {
                 $title = $email->direction === EmailDirection::Inbound
@@ -137,7 +137,7 @@ class DealTimeline
         }
 
         if ($wants('document') && isset($kinds['document'])) {
-            foreach (Document::query()->tap(fn (Builder $query) => $this->scope($query, $subject))->with('uploader')->latest('id')->limit($limit)->get() as $document) {
+            foreach (Document::query()->tap(fn (Builder $query) => $this->scope($query, $subject, $viewer))->with('uploader')->latest('id')->limit($limit)->get() as $document) {
                 $entries[] = new TimelineEntry(
                     'document-'.$document->id,
                     'document',
@@ -199,17 +199,20 @@ class DealTimeline
     }
 
     /**
-     * @template TModel of \Illuminate\Database\Eloquent\Model
-     *
-     * @param  Builder<TModel>  $query
+     * @param  Builder<Note>|Builder<Activity>|Builder<Document>  $query
      */
-    private function scope(Builder $query, Deal|Company|Person $subject): void
+    private function scope(Builder $query, Deal|Company|Person $subject, ?Authenticatable $viewer): void
     {
         $query->where(match (true) {
             $subject instanceof Deal => 'deal_id',
             $subject instanceof Company => 'company_id',
             default => 'person_id',
         }, $subject->id);
+
+        // A company or a person may have deals the viewer doesn't see: their records stay hidden.
+        if ($viewer !== null) {
+            $query->visibleTo($viewer);
+        }
     }
 
     /**
@@ -217,14 +220,16 @@ class DealTimeline
      *
      * @return Builder<Email>
      */
-    private function emails(Deal|Company|Person $subject): Builder
+    private function emails(Deal|Company|Person $subject, ?Authenticatable $viewer): Builder
     {
-        return match (true) {
+        $query = match (true) {
             $subject instanceof Deal => Email::query()->where('deal_id', $subject->id),
             $subject instanceof Company => Email::query()->where(fn (Builder $inner) => $inner
                 ->whereIn('deal_id', Deal::query()->select('id')->where('company_id', $subject->id))
                 ->orWhereIn('person_id', Person::query()->select('id')->where('company_id', $subject->id))),
             default => Email::query()->where('person_id', $subject->id),
         };
+
+        return $viewer === null ? $query : $query->visibleTo($viewer);
     }
 }

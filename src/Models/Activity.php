@@ -190,4 +190,12 @@ class Activity extends CrmModel
 
         return $late ? $query->where($condition) : $query->whereNot($condition);
     }
+
+    /**
+     * Seen with their deal (see BelongsToWorkspace::scopeVisibleTo()).
+     */
+    protected function followsDealVisibility(): bool
+    {
+        return true;
+    }
 }

@@ -105,4 +105,12 @@ class Email extends CrmModel
     {
         return $this->belongsTo(Crm::userModel(), 'sent_by');
     }
+
+    /**
+     * Seen with their deal (see BelongsToWorkspace::scopeVisibleTo()).
+     */
+    protected function followsDealVisibility(): bool
+    {
+        return true;
+    }
 }

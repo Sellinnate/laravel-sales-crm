@@ -91,4 +91,12 @@ class Note extends CrmModel
     {
         return $this->belongsTo(Crm::userModel(), 'user_id');
     }
+
+    /**
+     * Seen with their deal (see BelongsToWorkspace::scopeVisibleTo()).
+     */
+    protected function followsDealVisibility(): bool
+    {
+        return true;
+    }
 }

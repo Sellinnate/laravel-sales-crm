@@ -84,4 +84,12 @@ class Document extends CrmModel
     {
         return $this->belongsTo(Crm::userModel(), 'uploaded_by');
     }
+
+    /**
+     * Seen with their deal (see BelongsToWorkspace::scopeVisibleTo()).
+     */
+    protected function followsDealVisibility(): bool
+    {
+        return true;
+    }
 }

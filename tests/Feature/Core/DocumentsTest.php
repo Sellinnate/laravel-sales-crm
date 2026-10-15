@@ -10,6 +10,7 @@ use Sellinnate\SalesCrm\Actions\ManageDocuments;
 use Sellinnate\SalesCrm\Actions\UpdateDeal;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Models\Document;
+use Sellinnate\SalesCrm\Support\Crm;
 
 beforeEach(function () {
     Storage::fake('local');
@@ -68,4 +69,20 @@ it('downloads a document only through the CRM, and a quote with a signed link', 
     $this->get(URL::temporarySignedRoute('sales-crm.documents.signed', CarbonImmutable::now()->addDay(), ['document' => $quote->id]))->assertOk();
     $this->get(URL::temporarySignedRoute('sales-crm.documents.signed', CarbonImmutable::now()->addDay(), ['document' => $other->id]))->assertNotFound();
     $this->get(route('sales-crm.documents.signed', ['document' => $quote->id]))->assertForbidden();
+});
+
+it('keeps the file of a document whose deletion the host rolls back', function () {
+    $document = $this->documents->upload($this->deal, UploadedFile::fake()->create('notes.txt', 1, 'text/plain'), ['kind' => 'other'], $this->seller);
+
+    try {
+        Crm::db()->transaction(function () use ($document): void {
+            $this->documents->delete($document, $this->seller);
+
+            throw new RuntimeException('The host changes its mind.');
+        });
+    } catch (RuntimeException) {
+    }
+
+    expect(Document::query()->find($document->id))->not->toBeNull();
+    Storage::disk('local')->assertExists($document->path);
 });

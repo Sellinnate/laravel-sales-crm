@@ -3,13 +3,16 @@
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 use Sellinnate\SalesCrm\Actions\MoveDeal;
 use Sellinnate\SalesCrm\Actions\UpdateDeal;
 use Sellinnate\SalesCrm\Authorization\Access;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
+use Sellinnate\SalesCrm\Livewire\Agenda;
 use Sellinnate\SalesCrm\Models\Activity;
 use Sellinnate\SalesCrm\Models\Company;
 use Sellinnate\SalesCrm\Models\Deal;
+use Sellinnate\SalesCrm\Models\Note;
 use Sellinnate\SalesCrm\Models\Person;
 use Sellinnate\SalesCrm\Models\Pipeline;
 
@@ -95,4 +98,43 @@ it('scopes the activities of the agenda and the reminders', function () {
 
     expect(Activity::query()->visibleTo($this->alice)->count())->toBe(0)
         ->and(Activity::query()->visibleTo($this->both)->count())->toBe(1);
+});
+
+it('hides the activities and notes of the deals a user does not see, in the agenda too', function () {
+    config(['sales-crm.authorization.deal_visibility' => 'owner']);
+    app()->forgetScopedInstances();
+    $hidden = SalesCrm::for($this->alpha)->createDeal(['title' => 'Both own', 'owner_id' => $this->both->id], $this->both);
+    SalesCrm::scheduleActivity($hidden, ['type' => 'call', 'title' => 'Secret call', 'due_date' => now()->toDateString(), 'assigned_to' => $this->both->id], $this->both);
+    SalesCrm::addNote($hidden, 'Secret note', $this->both);
+    SalesCrm::scheduleActivity($this->alphaDeal, ['type' => 'call', 'title' => 'Open call', 'due_date' => now()->toDateString()], $this->alice);
+
+    expect(Activity::query()->visibleTo($this->alice)->pluck('title')->all())->toBe(['Open call'])
+        ->and(Note::query()->visibleTo($this->alice)->where('body', 'Secret note')->exists())->toBeFalse()
+        ->and(Activity::query()->visibleTo($this->both)->where('title', 'Secret call')->exists())->toBeTrue()
+        ->and(Note::query()->visibleTo($this->both)->where('body', 'Secret note')->exists())->toBeTrue();
+
+    Livewire::actingAs($this->alice)->test(Agenda::class)
+        ->set('scope', 'everybody')
+        ->assertSee('Open call')
+        ->assertDontSee('Secret call')
+        ->assertDontSee('Both own');
+});
+
+it('leaves the records of hidden deals out of the timeline of their company, counters included', function () {
+    config(['sales-crm.authorization.deal_visibility' => 'owner']);
+    app()->forgetScopedInstances();
+    $company = $this->alphaDeal->company;
+    $hidden = SalesCrm::for($this->alpha)->createDeal(['title' => 'Both own', 'owner_id' => $this->both->id, 'company_id' => $company->id], $this->both);
+    $note = SalesCrm::addNote($hidden, 'Secret note', $this->both);
+    $note->forceFill(['company_id' => $company->id])->save();
+    $visible = SalesCrm::addNote($this->alphaDeal, 'Public note', $this->alice);
+    $visible->forceFill(['company_id' => $company->id])->save();
+
+    $timeline = SalesCrm::timeline();
+    $titles = fn ($viewer): array => array_map(fn ($entry): ?string => $entry->body, $timeline->for($company, $viewer, 'note'));
+
+    expect($titles($this->alice))->toBe(['Public note'])
+        ->and($timeline->counts($company, $this->alice)['note'])->toBe(1)
+        ->and($titles($this->both))->toContain('Secret note')
+        ->and($timeline->counts($company, $this->both)['note'])->toBe(1 + (int) Gate::forUser($this->both)->allows('view', $this->alphaDeal));
 });

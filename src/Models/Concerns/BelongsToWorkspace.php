@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Sellinnate\SalesCrm\Authorization\Access;
+use Sellinnate\SalesCrm\Models\Deal;
+use Sellinnate\SalesCrm\Support\Crm;
 use Sellinnate\SalesCrm\Workspaces\Workspace;
 
 /**
@@ -82,7 +84,9 @@ trait BelongsToWorkspace
     }
 
     /**
-     * Scope to the records the user may see: the workspaces they work in.
+     * Scope to the records the user may see: the workspaces they work in and, for the records of a
+     * deal (activities, notes, documents, emails), the deals they see — `deal_visibility` "owner" or
+     * an Authorizer of the host may hide some deals of a workspace.
      *
      * @param  Builder<static>  $query
      * @return Builder<static>
@@ -91,6 +95,19 @@ trait BelongsToWorkspace
     {
         app(Access::class)->constrain($query, $user);
 
+        if ($this->followsDealVisibility() && $user !== null) {
+            $column = $this->qualifyColumn('deal_id');
+            $query->where(fn (Builder $records) => $records->whereNull($column)->orWhereIn($column, Deal::query()->visibleTo($user)->select(Crm::table('deals').'.id')));
+        }
+
         return $query;
+    }
+
+    /**
+     * Whether the records belong to a deal (a nullable `deal_id`) and are seen with it.
+     */
+    protected function followsDealVisibility(): bool
+    {
+        return false;
     }
 }
