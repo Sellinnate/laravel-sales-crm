@@ -143,3 +143,17 @@ it('never reminds an assignee of an activity whose deal they no longer see', fun
 
     Notification::assertNotSentTo($this->seller, ActivityDueNotification::class);
 });
+
+it('keeps the assignee of an activity changed by someone else, unless asked to clear it', function () {
+    $colleague = crmUser();
+    $activity = $this->actions->save($this->deal, ['type' => 'call', 'title' => 'Call', 'due_date' => CarbonImmutable::now()->addDay()->toDateString(), 'assigned_to' => $colleague->id], $this->seller);
+
+    $this->actions->save($this->deal, ['type' => 'call', 'title' => 'Call back', 'due_date' => CarbonImmutable::now()->addDay()->toDateString()], $this->seller, $activity);
+    expect($activity->fresh()->assigned_to)->toBe($colleague->id)->and($activity->fresh()->title)->toBe('Call back');
+
+    $this->actions->save($this->deal, ['type' => 'call', 'title' => 'Call back', 'due_date' => CarbonImmutable::now()->addDay()->toDateString(), 'assigned_to' => ''], $this->seller, $activity);
+    expect($activity->fresh()->assigned_to)->toBeNull();
+
+    $new = $this->actions->save($this->deal, ['type' => 'task', 'title' => 'Mine', 'due_date' => CarbonImmutable::now()->addDay()->toDateString(), 'assigned_to' => ''], $this->seller);
+    expect($new->assigned_to)->toBe($this->seller->id);
+});
