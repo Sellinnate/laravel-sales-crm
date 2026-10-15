@@ -139,7 +139,8 @@ class DealPanel extends Component
 
     public function deal(): Deal
     {
-        return Deal::query()->with(['stage', 'pipeline.stages', 'company', 'owner', 'approver', 'people'])->findOrFail($this->dealId);
+        // Every request, not only the first: the deal may have been hidden while the panel was open.
+        return Deal::query()->visibleTo($this->viewer())->with(['stage', 'pipeline.stages', 'company', 'owner', 'approver', 'people'])->findOrFail($this->dealId);
     }
 
     #[Computed]

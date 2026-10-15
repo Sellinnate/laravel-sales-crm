@@ -27,7 +27,7 @@ class DealPage extends Component
 
     public function render(): View
     {
-        $deal = Deal::query()->findOrFail($this->dealId);
+        $deal = Deal::query()->visibleTo($this->viewer())->findOrFail($this->dealId);
 
         return $this->page('sales-crm::livewire.deal-page', $deal->title, ['deal' => $deal]);
     }

@@ -65,7 +65,9 @@ class RecordFeed extends Component
 
     public function record(): Company|Person
     {
-        return $this->type === 'person' ? Person::query()->findOrFail($this->recordId) : Company::query()->findOrFail($this->recordId);
+        return $this->type === 'person'
+            ? Person::query()->visibleTo($this->viewer())->findOrFail($this->recordId)
+            : Company::query()->visibleTo($this->viewer())->findOrFail($this->recordId);
     }
 
     private function resetActivity(): void

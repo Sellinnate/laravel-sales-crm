@@ -11,6 +11,8 @@ use Sellinnate\SalesCrm\Authorization\Access;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Livewire\Agenda;
 use Sellinnate\SalesCrm\Livewire\Companies;
+use Sellinnate\SalesCrm\Livewire\CompanyPage;
+use Sellinnate\SalesCrm\Livewire\DealPanel;
 use Sellinnate\SalesCrm\Livewire\People;
 use Sellinnate\SalesCrm\Models\Activity;
 use Sellinnate\SalesCrm\Models\Company;
@@ -187,4 +189,17 @@ it('refuses to change an activity of a hidden deal through the person it names',
     expect(fn () => app(ManageActivities::class)->save($person, ['type' => 'call', 'title' => 'Hijacked', 'due_date' => now()->toDateString()], $this->alice, $activity))
         ->toThrow(AuthorizationException::class)
         ->and($activity->fresh()->title)->toBe('Secret call');
+});
+
+it('checks the access to a record on every request of an open page, not only on the first', function () {
+    $company = $this->alphaDeal->company;
+    $panel = Livewire::actingAs($this->alice)->test(DealPanel::class, ['dealId' => $this->alphaDeal->id])->assertOk();
+    $page = Livewire::actingAs($this->alice)->test(CompanyPage::class, ['company' => $company])->assertOk();
+
+    $this->alpha->users()->detach($this->alice->id);
+    $this->alice->unsetRelations();
+    app()->forgetScopedInstances();
+
+    $panel->call('$refresh')->assertStatus(404);
+    $page->call('$refresh')->assertStatus(404);
 });

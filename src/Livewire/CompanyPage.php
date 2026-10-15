@@ -41,7 +41,8 @@ class CompanyPage extends Component
 
     public function company(): Company
     {
-        return Company::query()->findOrFail($this->companyId);
+        // Every request, not only the first: access may have been revoked while the page was open.
+        return Company::query()->visibleTo($this->viewer())->findOrFail($this->companyId);
     }
 
     private function fillForm(Company $company): void

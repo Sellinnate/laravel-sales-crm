@@ -45,7 +45,8 @@ class PersonPage extends Component
 
     public function person(): Person
     {
-        return Person::query()->findOrFail($this->personId);
+        // Every request, not only the first: access may have been revoked while the page was open.
+        return Person::query()->visibleTo($this->viewer())->findOrFail($this->personId);
     }
 
     private function fillForm(Person $person): void
