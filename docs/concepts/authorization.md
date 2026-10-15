@@ -78,7 +78,10 @@ SALES_CRM_DEAL_VISIBILITY=owner
   salespeople must not see each other's pipeline.
 
 Visibility applies everywhere: board, list, export, reports, search, API, MCP,
-and to activities, notes and documents of hidden deals.
+and to the activities, notes, documents and emails of hidden deals, which
+`visibleTo($user)` leaves out of the agenda and of the timelines of companies
+and people too. Records without a deal (a note on a company) follow the
+workspace only.
 
 ## The policies
 
