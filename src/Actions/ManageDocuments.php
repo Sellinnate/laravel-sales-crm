@@ -74,9 +74,12 @@ class ManageDocuments
                 // The file goes also when a transaction around this one (a new deal, a move) rolls back.
                 Crm::afterRollBack(fn () => self::remove($disk, $path, null));
 
-                // The row of the deal, locked as its changes lock it, gives one version per quote.
+                // The row of the deal, locked as its changes lock it, gives one version per quote; the one
+                // of a company, as its deletion locks it, keeps the file from outliving the company.
                 if ($target instanceof Deal) {
                     Deal::query()->whereKey($target->id)->lockForUpdate()->first();
+                } else {
+                    Company::query()->whereKey($target->id)->lockForUpdate()->first();
                 }
 
                 $version = $target instanceof Deal && $kind === DocumentKind::Quote
