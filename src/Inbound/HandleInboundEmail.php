@@ -85,7 +85,7 @@ class HandleInboundEmail
         $subject = strtolower((string) $email->subject);
 
         return ($auto !== '' && $auto !== 'no')
-            || isset($headers['x-autoreply']) || isset($headers['x-autorespond']) || isset($headers['x-auto-response-suppress'])
+            || isset($headers['x-autoreply']) || isset($headers['x-autorespond'])
             || in_array($precedence, ['bulk', 'junk', 'auto_reply', 'list'], true)
             || str_starts_with($from, 'mailer-daemon@') || str_starts_with($from, 'postmaster@')
             || preg_match('/^(auto(matic)?[ -]?reply|out of (the )?office|undeliver|delivery status notification|mail delivery failed|returned mail|risposta automatica|fuori sede|non recapitat)/u', $subject) === 1;
@@ -93,7 +93,7 @@ class HandleInboundEmail
 
     public static function syntheticId(InboundEmail $email): string
     {
-        return 'synthetic.'.sha1(implode('|', [(string) $email->fromEmail, (string) $email->date?->toIso8601String(), (string) $email->subject, (string) $email->text])).'@sales-crm.local';
+        return 'synthetic.'.sha1(implode('|', [(string) $email->fromEmail, (string) $email->date?->toIso8601String(), (string) $email->subject, (string) $email->text, (string) $email->html])).'@sales-crm.local';
     }
 
     private function store(InboundEmail $email, string $messageId, ?Workspace $workspace, ?int $dealId, ?int $personId, bool $outbound): ?Email

@@ -325,3 +325,14 @@ it('stops polling at an email it cannot store, which the driver returns again at
     expect($driver->cursor)->toBe(2)
         ->and(Email::query()->whereIn('message_id', ['p-1@acme.example', 'p-2@acme.example'])->count())->toBe(2);
 });
+
+it('keeps ordinary emails that only ask not to be auto-answered, and tells apart HTML-only emails without Message-ID', function () {
+    $exchange = SalesCrm::inbound()->receive(InboundEmail::fromArray(['message_id' => 'exch-1@acme.example', 'from' => 'jane@acme.example', 'subject' => 'Contract', 'text' => 'Signed', 'headers' => ['X-Auto-Response-Suppress' => 'All']]));
+    $first = SalesCrm::inbound()->receive(InboundEmail::fromArray(['from' => 'jane@acme.example', 'subject' => 'Update', 'html' => '<p>First</p>', 'date' => '2026-10-01T10:00:00+00:00']));
+    $second = SalesCrm::inbound()->receive(InboundEmail::fromArray(['from' => 'jane@acme.example', 'subject' => 'Update', 'html' => '<p>Second</p>', 'date' => '2026-10-01T10:00:00+00:00']));
+
+    expect($exchange)->not->toBeNull()
+        ->and($first)->not->toBeNull()
+        ->and($second)->not->toBeNull()
+        ->and($second?->message_id)->not->toBe($first?->message_id);
+});

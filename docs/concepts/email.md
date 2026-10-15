@@ -112,8 +112,8 @@ Inbound emails can reach the CRM in three ways:
 Every inbound email is checked in this order:
 
 1. **Automatic messages are dropped**: auto-replies, out-of-office messages and
-   bounces (detected from the `Auto-Submitted`, `Precedence`, `X-Autoreply`,
-   `X-Autorespond`, `X-Auto-Response-Suppress` headers, senders like
+   bounces (detected from the `Auto-Submitted`, `Precedence`, `X-Autoreply` and
+   `X-Autorespond` headers, senders like
    `mailer-daemon@` and `postmaster@`, and subjects like "Automatic reply",
    "Out of office", "Undeliverable", "Delivery Status Notification").
 2. **A reply in a known thread**: if `In-Reply-To` or `References` contains the

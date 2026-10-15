@@ -98,7 +98,6 @@ class ImapDriver implements InboundDriver
                 'precedence' => $header('Precedence'),
                 'x-autoreply' => $header('X-Autoreply'),
                 'x-autorespond' => $header('X-Autorespond'),
-                'x-auto-response-suppress' => $header('X-Auto-Response-Suppress'),
             ], fn (?string $value): bool => $value !== null),
         );
     }
