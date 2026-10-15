@@ -3,6 +3,7 @@
 namespace Sellinnate\SalesCrm\Livewire;
 
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -37,7 +38,7 @@ class PersonPage extends Component
 
     public function render(): View
     {
-        $person = $this->person()->load(['deals.stage', 'company']);
+        $person = $this->person()->load(['deals' => fn (BelongsToMany $deals) => $deals->visibleTo($this->viewer())->with('stage'), 'company']);
 
         return $this->page('sales-crm::livewire.person-page', $person->name, ['person' => $person]);
     }

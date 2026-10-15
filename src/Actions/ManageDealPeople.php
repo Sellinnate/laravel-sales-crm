@@ -153,7 +153,7 @@ class ManageDealPeople
     private static function validate(?Workspace $workspace, array $data): array
     {
         $data = array_map(fn (mixed $value): mixed => is_string($value) && trim($value) === '' ? null : $value, $data);
-        $people = Rule::exists(Crm::table('people'), 'id');
+        $people = Rule::exists(Person::class, 'id');
         $workspace === null ? $people->whereNull('workspace_type') : $people->where('workspace_type', $workspace->type)->where('workspace_id', $workspace->id);
 
         /** @var array<string, mixed> $validated */

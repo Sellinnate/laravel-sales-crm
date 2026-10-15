@@ -18,6 +18,7 @@ use Sellinnate\SalesCrm\Enums\PaymentStatus;
 use Sellinnate\SalesCrm\Enums\Priority;
 use Sellinnate\SalesCrm\Enums\RecurringPeriod;
 use Sellinnate\SalesCrm\Enums\SignatureStatus;
+use Sellinnate\SalesCrm\Models\Company;
 use Sellinnate\SalesCrm\Models\Deal;
 use Sellinnate\SalesCrm\Models\Document;
 use Sellinnate\SalesCrm\Support\Crm;
@@ -40,7 +41,7 @@ class DealFields
     {
         $amount = ['nullable', 'numeric', 'min:0', 'max:1000000000'];
         $text = ['nullable', 'string', 'max:2000'];
-        $companies = Rule::exists(Crm::table('companies'), 'id');
+        $companies = Rule::exists(Company::class, 'id');
         $workspace === null
             ? $companies->whereNull('workspace_type')
             : $companies->where('workspace_type', $workspace->type)->where('workspace_id', $workspace->id);
@@ -54,7 +55,7 @@ class DealFields
             'source' => ['required', Rule::enum(DealSource::class)],
             'tags' => ['nullable', 'array', 'max:'.max(1, (int) config('sales-crm.deals.max_tags', 10))],
             'tags.*' => ['string', 'max:30'],
-            'external_ref' => ['nullable', 'string', 'max:64', Rule::unique(Crm::table('deals'), 'external_ref')->where('workspace_key', $workspace?->key() ?? '')->ignore($deal?->getKey())],
+            'external_ref' => ['nullable', 'string', 'max:64', Rule::unique(Deal::class, 'external_ref')->where('workspace_key', $workspace?->key() ?? '')->ignore($deal?->getKey())],
             'amount_once' => $amount,
             'deposit' => $amount,
             'recurring' => $amount,

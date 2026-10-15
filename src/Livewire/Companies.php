@@ -14,6 +14,7 @@ use Sellinnate\SalesCrm\Actions\SaveCompany;
 use Sellinnate\SalesCrm\Livewire\Concerns\InteractsWithCrm;
 use Sellinnate\SalesCrm\Livewire\Concerns\ListsRecords;
 use Sellinnate\SalesCrm\Models\Company;
+use Sellinnate\SalesCrm\Models\Deal;
 use Sellinnate\SalesCrm\Support\Crm;
 use Sellinnate\SalesCrm\Support\Search;
 
@@ -99,7 +100,7 @@ class Companies extends Component
                 ->whereRaw(Search::like('LOWER(COALESCE('.Crm::db()->getQueryGrammar()->wrap($table.'.vat_number').", ''))"), [$pattern], 'or')
                 ->whereRaw(Search::like('LOWER(COALESCE('.Crm::db()->getQueryGrammar()->wrap($table.'.domain').", ''))"), [$pattern], 'or')
                 ->whereRaw(Search::like('LOWER(COALESCE('.Crm::db()->getQueryGrammar()->wrap($table.'.city').", ''))"), [$pattern], 'or')))
-            ->withCount(['deals', 'people'])
+            ->withCount(['deals' => fn (Builder $deals) => $deals->whereIn(Crm::table('deals').'.id', Deal::query()->visibleTo($this->viewer())->select(Crm::table('deals').'.id')), 'people'])
             ->orderBy('name')
             ->paginate(30);
     }

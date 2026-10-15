@@ -3,6 +3,7 @@
 namespace Sellinnate\SalesCrm\Livewire;
 
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -33,7 +34,7 @@ class CompanyPage extends Component
 
     public function render(): View
     {
-        $company = $this->company()->load(['deals.stage', 'people']);
+        $company = $this->company()->load(['deals' => fn (HasMany $deals) => $deals->visibleTo($this->viewer())->with('stage'), 'people']);
 
         return $this->page('sales-crm::livewire.company-page', $company->name, ['company' => $company]);
     }

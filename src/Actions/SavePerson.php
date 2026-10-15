@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Sellinnate\SalesCrm\Events\PersonCreated;
 use Sellinnate\SalesCrm\Models\Activity;
+use Sellinnate\SalesCrm\Models\Company;
 use Sellinnate\SalesCrm\Models\Person;
 use Sellinnate\SalesCrm\Services\DealPositions;
 use Sellinnate\SalesCrm\Services\Matcher;
@@ -46,7 +47,7 @@ class SavePerson
         }
 
         $data = array_map(fn (mixed $value): mixed => is_string($value) ? (trim($value) === '' ? null : trim($value)) : $value, $data);
-        $companies = Rule::exists(Crm::table('companies'), 'id');
+        $companies = Rule::exists(Company::class, 'id');
         $workspace === null ? $companies->whereNull('workspace_type') : $companies->where('workspace_type', $workspace->type)->where('workspace_id', $workspace->id);
 
         /** @var array<string, string|int|null> $validated */

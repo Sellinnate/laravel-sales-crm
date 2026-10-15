@@ -53,7 +53,7 @@ class ManageActivities
 
         $workspace = $target->workspaceRef();
         $data = array_map(fn (mixed $value): mixed => is_string($value) ? (trim($value) === '' ? null : trim($value)) : $value, $data);
-        $people = Rule::exists(Crm::table('people'), 'id');
+        $people = Rule::exists(Person::class, 'id');
         $workspace === null ? $people->whereNull('workspace_type') : $people->where('workspace_type', $workspace->type)->where('workspace_id', $workspace->id);
 
         /** @var array{type: string, title: string, due_date: string, due_time?: string|null, remind_minutes?: int|string|null, assigned_to?: int|string|null, notes?: string|null, person_id?: int|string|null} $validated */

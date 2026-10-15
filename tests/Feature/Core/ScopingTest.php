@@ -9,12 +9,15 @@ use Sellinnate\SalesCrm\Actions\UpdateDeal;
 use Sellinnate\SalesCrm\Authorization\Access;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Livewire\Agenda;
+use Sellinnate\SalesCrm\Livewire\Companies;
+use Sellinnate\SalesCrm\Livewire\People;
 use Sellinnate\SalesCrm\Models\Activity;
 use Sellinnate\SalesCrm\Models\Company;
 use Sellinnate\SalesCrm\Models\Deal;
 use Sellinnate\SalesCrm\Models\Note;
 use Sellinnate\SalesCrm\Models\Person;
 use Sellinnate\SalesCrm\Models\Pipeline;
+use Sellinnate\SalesCrm\Services\DealFields;
 
 beforeEach(function () {
     useTeams();
@@ -137,4 +140,38 @@ it('leaves the records of hidden deals out of the timeline of their company, cou
         ->and($timeline->counts($company, $this->alice)['note'])->toBe(1)
         ->and($titles($this->both))->toContain('Secret note')
         ->and($timeline->counts($company, $this->both)['note'])->toBe(1 + (int) Gate::forUser($this->both)->allows('view', $this->alphaDeal));
+});
+
+it('shows on a company and a person only the deals the user sees, counters included', function () {
+    config(['sales-crm.authorization.deal_visibility' => 'owner']);
+    app()->forgetScopedInstances();
+    $company = $this->alphaDeal->company;
+    $person = $this->alphaDeal->people->first();
+    $hidden = SalesCrm::for($this->alpha)->createDeal(['title' => 'Hidden renewal', 'owner_id' => $this->both->id, 'company_id' => $company->id, 'person' => ['person_id' => $person->id]], $this->both);
+
+    $this->actingAs($this->alice)->get(route('sales-crm.companies.show', $company))->assertOk()->assertSee('Alpha deal')->assertDontSee('Hidden renewal');
+    $this->actingAs($this->alice)->get(route('sales-crm.people.show', $person))->assertOk()->assertSee('Alpha deal')->assertDontSee('Hidden renewal');
+    $this->actingAs($this->both)->get(route('sales-crm.companies.show', $company))->assertOk()->assertSee('Hidden renewal');
+
+    $count = fn ($component, int $id): ?int => collect($component->instance()->{$component->instance() instanceof Companies ? 'companies' : 'people'}->items())->firstWhere('id', $id)?->deals_count;
+
+    expect($count(Livewire::actingAs($this->alice)->test(Companies::class), $company->id))->toBe(1)
+        ->and($count(Livewire::actingAs($this->alice)->test(People::class), $person->id))->toBe(1)
+        ->and($count(Livewire::actingAs($this->both)->test(Companies::class), $company->id))->toBe(1)
+        ->and($count(Livewire::actingAs($this->both)->test(People::class), $person->id))->toBe(1);
+
+    $this->both->forceFill(['is_admin' => true])->save();
+    expect($count(Livewire::actingAs($this->both->fresh())->test(Companies::class), $company->id))->toBe(2);
+
+    expect($hidden->company_id)->toBe($company->id);
+});
+
+it('validates the records of the CRM on its own database connection', function () {
+    config(['sales-crm.database.connection' => 'crm']);
+
+    $rules = collect(app(DealFields::class)->rules(null))->flatten()->map(fn ($rule): string => is_object($rule) && method_exists($rule, '__toString') ? (string) $rule : (is_string($rule) ? $rule : ''));
+
+    expect($rules->filter(fn (string $rule): bool => str_starts_with($rule, 'exists:') || str_starts_with($rule, 'unique:'))->values()->all())
+        ->not->toBeEmpty()
+        ->each->toContain(':crm.');
 });

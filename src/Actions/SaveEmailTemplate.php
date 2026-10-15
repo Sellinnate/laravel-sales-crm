@@ -39,7 +39,7 @@ class SaveEmailTemplate
 
         /** @var array{name: string, subject: string, body: string} $validated */
         $validated = Validator::make($data, [
-            'name' => ['required', 'string', 'max:120', Rule::unique(Crm::table('email_templates'), 'name')->where('workspace_key', $workspace?->key() ?? '')->ignore($template?->id)],
+            'name' => ['required', 'string', 'max:120', Rule::unique(EmailTemplate::class, 'name')->where('workspace_key', $workspace?->key() ?? '')->ignore($template?->id)],
             'subject' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string', 'max:20000'],
         ], ['name.unique' => __('sales-crm::validation.template_name')], [

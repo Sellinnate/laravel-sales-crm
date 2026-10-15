@@ -14,6 +14,7 @@ use Sellinnate\SalesCrm\Actions\SavePerson;
 use Sellinnate\SalesCrm\Livewire\Concerns\InteractsWithCrm;
 use Sellinnate\SalesCrm\Livewire\Concerns\ListsRecords;
 use Sellinnate\SalesCrm\Models\Company;
+use Sellinnate\SalesCrm\Models\Deal;
 use Sellinnate\SalesCrm\Models\Person;
 use Sellinnate\SalesCrm\Support\Crm;
 use Sellinnate\SalesCrm\Support\Search;
@@ -106,7 +107,7 @@ class People extends Component
                 }
             }))
             ->with('company:id,name')
-            ->withCount('deals')
+            ->withCount(['deals' => fn (Builder $deals) => $deals->whereIn(Crm::table('deals').'.id', Deal::query()->visibleTo($this->viewer())->select(Crm::table('deals').'.id'))])
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->paginate(30);
