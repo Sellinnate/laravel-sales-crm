@@ -3,11 +3,11 @@
 namespace Sellinnate\SalesCrm\Support;
 
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Database\Connection;
 use Illuminate\Contracts\Database\Query\Expression as ExpressionContract;
+use Illuminate\Database\Connection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
 /**

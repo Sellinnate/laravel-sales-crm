@@ -19,7 +19,7 @@ trait ListsRecords
             return null;
         }
 
-        return $this->workspaceFromKey((string) ($this->draft['workspace'] ?? $this->workspace ?? ''))
+        return $this->workspaceFromKey((string) ($this->draft['workspace'] ?? $this->workspace))
             ?? ($this->access()->workspacesFor(auth()->user())[0] ?? null);
     }
 }

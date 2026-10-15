@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use Sellinnate\SalesCrm\Actions\SaveEmailTemplate;
 use Sellinnate\SalesCrm\Actions\SaveWorkspaceSettings;
@@ -41,14 +42,14 @@ it('validates the definitions of custom fields', function () {
     expect(fn () => $save([['key' => 'Bad Key', 'label' => 'X', 'type' => 'text']]))->toThrow(ValidationException::class)
         ->and(fn () => $save([['key' => 'a', 'label' => 'Same', 'type' => 'text'], ['key' => 'b', 'label' => 'same', 'type' => 'text']]))->toThrow(ValidationException::class)
         ->and(fn () => $save([['key' => 'c', 'label' => 'Choice', 'type' => 'choice', 'options' => '']]))->toThrow(ValidationException::class)
-        ->and(fn () => app(SaveWorkspaceSettings::class)->customFields(null, [], $this->seller))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->and(fn () => app(SaveWorkspaceSettings::class)->customFields(null, [], $this->seller))->toThrow(AuthorizationException::class);
 });
 
 it('manages email templates with unique names', function () {
     $template = app(SaveEmailTemplate::class)->handle(null, ['name' => 'Follow-up', 'subject' => 'Hi', 'body' => 'Body'], $this->admin);
 
     expect(fn () => app(SaveEmailTemplate::class)->handle(null, ['name' => 'Follow-up', 'subject' => 'X', 'body' => 'Y'], $this->admin))->toThrow(ValidationException::class)
-        ->and(fn () => app(SaveEmailTemplate::class)->handle(null, ['name' => 'Mine', 'subject' => 'X', 'body' => 'Y'], $this->seller))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->and(fn () => app(SaveEmailTemplate::class)->handle(null, ['name' => 'Mine', 'subject' => 'X', 'body' => 'Y'], $this->seller))->toThrow(AuthorizationException::class);
 
     app(SaveEmailTemplate::class)->delete($template, $this->admin);
     expect(EmailTemplate::query()->count())->toBe(0);

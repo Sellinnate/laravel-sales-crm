@@ -26,6 +26,11 @@ use Sellinnate\SalesCrm\Workspaces\Workspace;
  * The settings of the CRM of a workspace: pipelines and stages (with probability, kind, stale days,
  * required fields and automation), custom fields, email templates and the entry stage of the deals
  * of integrations. Everybody sees them; managers change them.
+ *
+ * @property-read Collection<int, Pipeline> $pipelines
+ * @property-read Pipeline|null $currentPipeline
+ * @property-read Collection<int, EmailTemplate> $templates
+ * @property-read array<string, string> $workspaces
  */
 class Settings extends Component
 {
@@ -217,18 +222,24 @@ class Settings extends Component
             return;
         }
 
+        /** @var list<int> $ids */
         $ids = $pipeline->stages->pluck('id')->map(intval(...))->values()->all();
         $index = array_search($stageId, $ids, true);
-        $target = $index === false ? null : $index + ($direction < 0 ? -1 : 1);
 
-        if ($index === false || $target === null || ! isset($ids[$target])) {
+        if (! is_int($index)) {
+            return;
+        }
+
+        $target = $index + ($direction < 0 ? -1 : 1);
+
+        if (! isset($ids[$target])) {
             return;
         }
 
         [$ids[$index], $ids[$target]] = [$ids[$target], $ids[$index]];
 
         try {
-            app(SaveStage::class)->reorder($pipeline, $ids, $this->viewer());
+            app(SaveStage::class)->reorder($pipeline, array_values($ids), $this->viewer());
         } catch (ValidationException $exception) {
             $this->notify((string) collect($exception->errors())->flatten()->first(), 'danger');
         }
@@ -264,8 +275,7 @@ class Settings extends Component
 
     public function removeField(int $index): void
     {
-        unset($this->fields[$index]);
-        $this->fields = array_values($this->fields);
+        $this->fields = array_values(array_filter($this->fields, fn (int $key): bool => $key !== $index, ARRAY_FILTER_USE_KEY));
     }
 
     public function saveFields(): void

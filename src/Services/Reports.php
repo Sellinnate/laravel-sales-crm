@@ -6,6 +6,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Sellinnate\SalesCrm\Actions\CreateDeal;
 use Sellinnate\SalesCrm\Enums\DealSource;
 use Sellinnate\SalesCrm\Enums\LostReason;
 use Sellinnate\SalesCrm\Models\Activity;
@@ -266,7 +267,7 @@ class Reports
     }
 
     /**
-     * The deals born from records of the host ({@see \Sellinnate\SalesCrm\Actions\CreateDeal::fromOrigin()}):
+     * The deals born from records of the host ({@see CreateDeal::fromOrigin()}):
      * the proof of value of the integration that feeds the CRM.
      *
      * @param  Collection<int, Deal>  $open

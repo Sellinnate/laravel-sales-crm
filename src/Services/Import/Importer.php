@@ -19,7 +19,6 @@ use Sellinnate\SalesCrm\Enums\CommissionType;
 use Sellinnate\SalesCrm\Enums\DealSource;
 use Sellinnate\SalesCrm\Enums\ImportStatus;
 use Sellinnate\SalesCrm\Enums\LostReason;
-use Sellinnate\SalesCrm\Enums\PaymentStatus;
 use Sellinnate\SalesCrm\Enums\RequiredField;
 use Sellinnate\SalesCrm\Enums\SignatureStatus;
 use Sellinnate\SalesCrm\Enums\StageKind;

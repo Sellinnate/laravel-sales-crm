@@ -5,7 +5,3 @@ parameters:
         - src
         - database
     tmpDir: build/phpstan
-    excludePaths:
-        analyseAndScan:
-            - src/Livewire
-            - src/Mcp

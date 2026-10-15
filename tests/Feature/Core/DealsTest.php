@@ -1,11 +1,15 @@
 <?php
 
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-use Sellinnate\SalesCrm\Actions\CreateDeal;
 use Sellinnate\SalesCrm\Actions\DeleteDeal;
 use Sellinnate\SalesCrm\Actions\MoveDeal;
+use Sellinnate\SalesCrm\Actions\SavePipeline;
+use Sellinnate\SalesCrm\Actions\SaveStage;
+use Sellinnate\SalesCrm\Actions\SaveWorkspaceSettings;
 use Sellinnate\SalesCrm\Actions\UpdateDeal;
 use Sellinnate\SalesCrm\Enums\ApprovalStatus;
 use Sellinnate\SalesCrm\Enums\DealEventType;
@@ -210,7 +214,7 @@ it('completes the missing fields with the move, person and next activity include
     $deal = SalesCrm::shared()->createDeal(['title' => 'Signature soon'], $this->seller);
     $signature = crmStage($this->pipeline, 'Signature');
 
-    app(\Sellinnate\SalesCrm\Actions\SaveStage::class)->handle($this->pipeline, ['name' => 'Signature', 'color' => 'info', 'probability' => 90, 'kind' => 'open', 'required_fields' => ['amount', 'owner', 'person', 'next_activity']], $this->admin, $signature);
+    app(SaveStage::class)->handle($this->pipeline, ['name' => 'Signature', 'color' => 'info', 'probability' => 90, 'kind' => 'open', 'required_fields' => ['amount', 'owner', 'person', 'next_activity']], $this->admin, $signature);
 
     try {
         app(MoveDeal::class)->handle($deal, $signature->fresh(), $this->seller);
@@ -248,32 +252,32 @@ it('places a dropped card after its neighbour and renumbers the column', functio
 
 it('refuses a stage of another pipeline', function () {
     $deal = SalesCrm::shared()->createDeal(['title' => 'X'], $this->seller);
-    $other = app(\Sellinnate\SalesCrm\Actions\SavePipeline::class)->handle(null, ['name' => 'Other'], $this->admin);
+    $other = app(SavePipeline::class)->handle(null, ['name' => 'Other'], $this->admin);
 
     expect(fn () => app(MoveDeal::class)->handle($deal, $other->stages->first(), $this->seller))->toThrow(ValidationException::class);
 });
 
 it('deletes a deal only for managers, with its documents', function () {
     Event::fake([DealDeleted::class]);
-    \Illuminate\Support\Facades\Storage::fake('local');
+    Storage::fake('local');
     $deal = SalesCrm::shared()->createDeal(['title' => 'Delete me'], $this->seller);
-    \Illuminate\Support\Facades\Storage::disk('local')->put('sales-crm/x.pdf', 'pdf');
+    Storage::disk('local')->put('sales-crm/x.pdf', 'pdf');
     Document::query()->create(['deal_id' => $deal->id, 'kind' => 'quote', 'name' => 'x.pdf', 'disk' => 'local', 'path' => 'sales-crm/x.pdf']);
 
-    expect(fn () => app(DeleteDeal::class)->handle($deal, $this->seller))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+    expect(fn () => app(DeleteDeal::class)->handle($deal, $this->seller))->toThrow(AuthorizationException::class);
 
     app(DeleteDeal::class)->handle($deal, $this->admin);
 
     expect(Deal::query()->find($deal->id))->toBeNull()
         ->and(Document::query()->count())->toBe(0);
-    \Illuminate\Support\Facades\Storage::disk('local')->assertMissing('sales-crm/x.pdf');
+    Storage::disk('local')->assertMissing('sales-crm/x.pdf');
     Event::assertDispatched(DealDeleted::class, fn (DealDeleted $event): bool => $event->dealId === $deal->id && $event->attributes['title'] === 'Delete me');
 });
 
 it('creates one deal per record of the host, in the entry stage of the workspace', function () {
     $origin = crmUser(['name' => 'An order']);
     $meeting = crmStage($this->pipeline, 'Meeting / demo');
-    app(\Sellinnate\SalesCrm\Actions\SaveWorkspaceSettings::class)->handle(null, ['entry_stage_id' => $meeting->id], $this->admin);
+    app(SaveWorkspaceSettings::class)->handle(null, ['entry_stage_id' => $meeting->id], $this->admin);
 
     $deal = SalesCrm::shared()->createDealFrom($origin, ['title' => 'From the order']);
     $again = SalesCrm::shared()->createDealFrom($origin, ['title' => 'Again']);

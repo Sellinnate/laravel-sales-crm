@@ -3,6 +3,8 @@
 use Sellinnate\SalesCrm\Models\Pipeline;
 use Sellinnate\SalesCrm\Models\Stage;
 use Sellinnate\SalesCrm\Services\DefaultPipeline;
+use Sellinnate\SalesCrm\Workspaces\RelationWorkspaceResolver;
+use Sellinnate\SalesCrm\Workspaces\Workspace;
 use Workbench\App\Models\Team;
 use Workbench\App\Models\User;
 
@@ -21,7 +23,7 @@ function crmUser(array $attributes = []): User
  */
 function crmPipeline(?Team $team = null): Pipeline
 {
-    return app(DefaultPipeline::class)->ensureFor(\Sellinnate\SalesCrm\Workspaces\Workspace::of($team));
+    return app(DefaultPipeline::class)->ensureFor(Workspace::of($team));
 }
 
 /**
@@ -38,7 +40,7 @@ function crmStage(Pipeline $pipeline, string $name): Stage
 function useTeams(): void
 {
     config([
-        'sales-crm.workspaces.resolver' => \Sellinnate\SalesCrm\Workspaces\RelationWorkspaceResolver::class,
+        'sales-crm.workspaces.resolver' => RelationWorkspaceResolver::class,
         'sales-crm.workspaces.model' => Team::class,
         'sales-crm.workspaces.user_relation' => 'teams',
         'sales-crm.workspaces.members_relation' => 'users',

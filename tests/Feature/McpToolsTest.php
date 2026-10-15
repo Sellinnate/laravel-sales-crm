@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Gate;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Mcp\SalesCrmServer;
 use Sellinnate\SalesCrm\Mcp\Tools\CrmActivitiesDueTool;
@@ -69,7 +70,7 @@ it('keeps the tools within the scope of the user', function () {
 });
 
 it('refuses users without access to the CRM', function () {
-    \Illuminate\Support\Facades\Gate::define('sales-crm.access', fn () => false);
+    Gate::define('sales-crm.access', fn () => false);
 
     SalesCrmServer::actingAs($this->seller)->tool(CrmDealsListTool::class)->assertHasErrors(['not allowed']);
 });

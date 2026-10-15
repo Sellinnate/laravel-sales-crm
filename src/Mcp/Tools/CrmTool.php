@@ -52,7 +52,7 @@ abstract class CrmTool extends Tool
     }
 
     /**
-     * @param  array<string, mixed>|list<mixed>  $data
+     * @param  array<array-key, mixed>  $data
      */
     protected function json(array $data): Response
     {

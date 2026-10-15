@@ -19,6 +19,7 @@ use Sellinnate\SalesCrm\Actions\CreateDeal;
 use Sellinnate\SalesCrm\Actions\MoveDeal;
 use Sellinnate\SalesCrm\Actions\SaveView;
 use Sellinnate\SalesCrm\Actions\UpdateDeal;
+use Sellinnate\SalesCrm\Contracts\WorkspaceResolver;
 use Sellinnate\SalesCrm\Enums\RequiredField;
 use Sellinnate\SalesCrm\Exceptions\MissingRequirements;
 use Sellinnate\SalesCrm\Livewire\Concerns\InteractsWithCrm;
@@ -40,6 +41,21 @@ use Sellinnate\SalesCrm\Workspaces\Workspace;
  * mini form of the fields a stage requires (and of the reason of a loss), the side panel of a deal,
  * the quick add, the quick filters, the saved views and the list with inline edit, bulk actions and
  * export. The board redraws itself when someone else changes the pipeline.
+ *
+ * @property-read Pipeline|null $currentPipeline
+ * @property-read Collection<int, Pipeline> $pipelines
+ * @property-read list<RequiredField> $pendingMissing
+ * @property-read bool $pendingNeedsReason
+ * @property-read string $pendingStageName
+ * @property-read list<array{stage: Stage, deals: Collection<int, Deal>, count: int, value: int, weighted: int, more: int}> $columns
+ * @property-read LengthAwarePaginator<int, Deal> $deals
+ * @property-read array<string, string> $owners
+ * @property-read array<string, string> $workspaces
+ * @property-read array<string, string> $tags
+ * @property-read Collection<int, SavedView> $savedViews
+ * @property-read bool $isEmpty
+ * @property-read list<string> $companyNames
+ * @property-read list<RequiredField> $draftRequirements
  */
 class DealsBoard extends Component
 {
@@ -100,7 +116,11 @@ class DealsBoard extends Component
 
     public bool $showPanel = false;
 
-    /** Cards shown per column beyond the default, by stage id ("Show more"). @var array<int, int> */
+    /**
+     * Cards shown per column beyond the default, by stage id ("Show more").
+     *
+     * @var array<int, int>
+     */
     public array $limits = [];
 
     public string $version = '';
@@ -422,7 +442,7 @@ class DealsBoard extends Component
         $this->draft = [
             'title' => '',
             'company_name' => '',
-            'stage_id' => (string) ($stageId ?? $pipeline->firstOpenStage()?->id ?? ''),
+            'stage_id' => (string) ($stageId ?? $pipeline->firstOpenStage()->id ?? ''),
             'person' => ['first_name' => '', 'last_name' => '', 'email' => '', 'mobile' => ''],
             'amount_once' => '',
             'recurring' => '',
@@ -857,7 +877,7 @@ class DealsBoard extends Component
     #[Computed]
     public function companyNames(): array
     {
-        return Company::query()->inWorkspace($this->currentPipeline?->workspaceRef())->orderBy('name')->limit(300)->pluck('name')->all();
+        return array_values(array_map('strval', Company::query()->inWorkspace($this->currentPipeline?->workspaceRef())->orderBy('name')->limit(300)->pluck('name')->all()));
     }
 
     /**
@@ -875,7 +895,7 @@ class DealsBoard extends Component
         return $this->canManage($this->scope());
     }
 
-    private function resolver(): \Sellinnate\SalesCrm\Contracts\WorkspaceResolver
+    private function resolver(): WorkspaceResolver
     {
         return $this->access()->resolver();
     }

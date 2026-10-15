@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\File;
+use Sellinnate\SalesCrm\Models\Deal;
 
 it('publishes the configuration and the migrations and seeds the demo data', function () {
     $config = config_path('sales-crm.php');
@@ -13,11 +14,11 @@ it('publishes the configuration and the migrations and seeds the demo data', fun
 
     expect(File::exists($config))->toBeTrue()
         ->and($migrations())->toHaveCount(1)
-        ->and(\Sellinnate\SalesCrm\Models\Deal::query()->count())->toBe(30);
+        ->and(Deal::query()->count())->toBe(30);
 
     // A second run adds no duplicate demo data.
     $this->artisan('sales-crm:install', ['--demo' => true, '--force' => true])->expectsConfirmation('Run the migrations now?', 'no')->assertSuccessful();
-    expect(\Sellinnate\SalesCrm\Models\Deal::query()->count())->toBe(30);
+    expect(Deal::query()->count())->toBe(30);
 
     File::delete([$config, ...$migrations()]);
 });
@@ -26,7 +27,7 @@ it('never seeds the demo data in production', function () {
     app()->detectEnvironment(fn () => 'production');
 
     $this->artisan('sales-crm:install', ['--demo' => true, '--no-migrate' => true])->assertFailed();
-    expect(\Sellinnate\SalesCrm\Models\Deal::query()->count())->toBe(0);
+    expect(Deal::query()->count())->toBe(0);
 
     app()->detectEnvironment(fn () => 'testing');
 

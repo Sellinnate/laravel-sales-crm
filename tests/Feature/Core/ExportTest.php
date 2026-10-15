@@ -1,6 +1,7 @@
 <?php
 
 use Sellinnate\SalesCrm\Facades\SalesCrm;
+use Sellinnate\SalesCrm\Workspaces\Workspace;
 
 it('exports the deals the user sees with their filters, neutralising formulas', function () {
     useTeams();
@@ -20,7 +21,7 @@ it('exports the deals the user sees with their filters, neutralising formulas', 
     $filtered = $this->actingAs($alice)->get(route('sales-crm.deals.export', ['priority' => 'p4']))->streamedContent();
     expect($filtered)->toContain('Quiet deal')->not->toContain('HYPERLINK');
 
-    $this->actingAs($alice)->get(route('sales-crm.deals.export', ['workspace' => \Sellinnate\SalesCrm\Workspaces\Workspace::of($beta)?->key()]))->assertForbidden();
+    $this->actingAs($alice)->get(route('sales-crm.deals.export', ['workspace' => Workspace::of($beta)?->key()]))->assertForbidden();
 });
 
 it('exports XLSX when openspout is installed', function () {

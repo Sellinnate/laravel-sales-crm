@@ -26,6 +26,10 @@ use Sellinnate\SalesCrm\Services\Import\SpreadsheetReader;
  * The guided import of deals from a CSV or XLSX file: upload and sheet, mapping of the columns
  * (suggested from the headers), stage of each value of the stage column, preview of the first rows,
  * run in the queue and report with the rejected rows.
+ *
+ * @property-read Collection<int, Pipeline> $pipelines
+ * @property-read Collection<int, ImportModel> $recent
+ * @property-read list<array{row: int, title: string, action: string, reason: string|null, warnings: list<string>}> $outcomes
  */
 class Import extends Component
 {
@@ -112,7 +116,7 @@ class Import extends Component
     {
         $this->sheet = (string) $import->sheet;
         $this->monthFirst = (bool) ($import->mapping['month_first'] ?? false);
-        $this->defaultStage = (string) ($import->mapping['default_stage_id'] ?? $import->pipeline?->firstOpenStage()?->id ?? '');
+        $this->defaultStage = (string) ($import->mapping['default_stage_id'] ?? $import->pipeline?->firstOpenStage()->id ?? '');
 
         try {
             $headers = app(Importer::class)->reader($import)->preview(1)['headers'];

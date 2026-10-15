@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use InvalidArgumentException;
+use Laravel\Mcp\Server;
 use Livewire\Livewire;
 use Sellinnate\SalesCrm\Authorization\Access;
 use Sellinnate\SalesCrm\Authorization\DefaultAuthorizer;
@@ -76,14 +77,13 @@ class SalesCrmServiceProvider extends PackageServiceProvider
 
         Event::subscribe(SendNotifications::class);
 
-
         $this->registerRoutes();
 
         if (class_exists(Livewire::class) && (bool) config('sales-crm.ui.enabled', true)) {
             Components::register();
         }
 
-        if ((bool) config('sales-crm.mcp.enabled', false) && class_exists(\Laravel\Mcp\Server::class)) {
+        if ((bool) config('sales-crm.mcp.enabled', false) && class_exists(Server::class)) {
             McpRegistrar::register();
         }
     }

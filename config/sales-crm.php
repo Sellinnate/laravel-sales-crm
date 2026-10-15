@@ -1,6 +1,20 @@
 <?php
 
 use Sellinnate\SalesCrm\Authorization\DefaultAuthorizer;
+use Sellinnate\SalesCrm\Models\Activity;
+use Sellinnate\SalesCrm\Models\Company;
+use Sellinnate\SalesCrm\Models\Deal;
+use Sellinnate\SalesCrm\Models\Document;
+use Sellinnate\SalesCrm\Models\Note;
+use Sellinnate\SalesCrm\Models\Person;
+use Sellinnate\SalesCrm\Models\Pipeline;
+use Sellinnate\SalesCrm\Policies\ActivityPolicy;
+use Sellinnate\SalesCrm\Policies\CompanyPolicy;
+use Sellinnate\SalesCrm\Policies\DealPolicy;
+use Sellinnate\SalesCrm\Policies\DocumentPolicy;
+use Sellinnate\SalesCrm\Policies\NotePolicy;
+use Sellinnate\SalesCrm\Policies\PersonPolicy;
+use Sellinnate\SalesCrm\Policies\PipelinePolicy;
 use Sellinnate\SalesCrm\Workspaces\SingleWorkspaceResolver;
 
 return [
@@ -79,13 +93,13 @@ return [
         'deal_visibility' => env('SALES_CRM_DEAL_VISIBILITY', 'workspace'), // workspace | owner
 
         'policies' => [
-            Sellinnate\SalesCrm\Models\Pipeline::class => Sellinnate\SalesCrm\Policies\PipelinePolicy::class,
-            Sellinnate\SalesCrm\Models\Deal::class => Sellinnate\SalesCrm\Policies\DealPolicy::class,
-            Sellinnate\SalesCrm\Models\Company::class => Sellinnate\SalesCrm\Policies\CompanyPolicy::class,
-            Sellinnate\SalesCrm\Models\Person::class => Sellinnate\SalesCrm\Policies\PersonPolicy::class,
-            Sellinnate\SalesCrm\Models\Activity::class => Sellinnate\SalesCrm\Policies\ActivityPolicy::class,
-            Sellinnate\SalesCrm\Models\Note::class => Sellinnate\SalesCrm\Policies\NotePolicy::class,
-            Sellinnate\SalesCrm\Models\Document::class => Sellinnate\SalesCrm\Policies\DocumentPolicy::class,
+            Pipeline::class => PipelinePolicy::class,
+            Deal::class => DealPolicy::class,
+            Company::class => CompanyPolicy::class,
+            Person::class => PersonPolicy::class,
+            Activity::class => ActivityPolicy::class,
+            Note::class => NotePolicy::class,
+            Document::class => DocumentPolicy::class,
         ],
     ],
 

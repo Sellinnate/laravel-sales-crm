@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
 use Sellinnate\SalesCrm\Actions\ManageDealPeople;
@@ -68,7 +69,7 @@ it('deletes a company only without deals, and only for managers', function () {
     $busy = $deal->company;
     $idle = SalesCrm::shared()->company(['name' => 'Idle']);
 
-    expect(fn () => app(SaveCompany::class)->delete($idle, $this->seller))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class)
+    expect(fn () => app(SaveCompany::class)->delete($idle, $this->seller))->toThrow(AuthorizationException::class)
         ->and(fn () => app(SaveCompany::class)->delete($busy, $this->admin))->toThrow(ValidationException::class);
 
     app(SaveCompany::class)->delete($idle, $this->admin);

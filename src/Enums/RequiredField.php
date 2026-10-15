@@ -3,10 +3,11 @@
 namespace Sellinnate\SalesCrm\Enums;
 
 use Sellinnate\SalesCrm\Enums\Concerns\HasLabel;
+use Sellinnate\SalesCrm\Services\DealRequirements;
 
 /**
  * The closed catalogue of what a stage may require to enter it: each entry knows how to check
- * itself ({@see \Sellinnate\SalesCrm\Services\DealRequirements}) and how the mini form asks it.
+ * itself ({@see DealRequirements}) and how the mini form asks it.
  */
 enum RequiredField: string
 {

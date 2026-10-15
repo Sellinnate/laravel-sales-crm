@@ -1,12 +1,13 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Models\Deal;
 
 function enableApi(): void
 {
     config(['sales-crm.api.enabled' => true, 'sales-crm.api.middleware' => ['api', 'auth']]);
-    \Illuminate\Support\Facades\Route::group([], __DIR__.'/../../routes/api.php');
+    Route::group([], __DIR__.'/../../routes/api.php');
     app('router')->getRoutes()->refreshNameLookups();
 }
 
@@ -16,7 +17,7 @@ beforeEach(function () {
 });
 
 it('is off by default', function () {
-    expect(\Illuminate\Support\Facades\Route::has('sales-crm.api.deals.index'))->toBeFalse();
+    expect(Route::has('sales-crm.api.deals.index'))->toBeFalse();
 });
 
 it('serves pipelines and deals as JSON', function () {

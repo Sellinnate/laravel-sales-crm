@@ -2,10 +2,10 @@
 
 namespace Sellinnate\SalesCrm\Services;
 
-use Illuminate\Contracts\Auth\Authenticatable;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Sellinnate\SalesCrm\Enums\CommissionType;
 use Sellinnate\SalesCrm\Enums\DealEventType;
 use Sellinnate\SalesCrm\Enums\StageKind;

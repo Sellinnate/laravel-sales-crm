@@ -1,16 +1,18 @@
 <?php
 
+use DirectoryTree\ImapEngine\Testing\FakeMessage;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Sellinnate\SalesCrm\Actions\SaveEmailTemplate;
-use Sellinnate\SalesCrm\Actions\SendEmail;
+use Sellinnate\SalesCrm\Contracts\InboundDriver;
 use Sellinnate\SalesCrm\Data\InboundEmail;
 use Sellinnate\SalesCrm\Enums\EmailStatus;
 use Sellinnate\SalesCrm\Events\EmailFailed;
 use Sellinnate\SalesCrm\Events\EmailReceived;
 use Sellinnate\SalesCrm\Events\EmailSent;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
+use Sellinnate\SalesCrm\Inbound\Drivers\ImapDriver;
 use Sellinnate\SalesCrm\Jobs\DeliverEmail;
 use Sellinnate\SalesCrm\Mail\DealEmail;
 use Sellinnate\SalesCrm\Models\Email;
@@ -157,7 +159,7 @@ it('receives emails from the signed webhook only', function () {
 });
 
 it('polls the inbound driver and maps IMAP messages', function () {
-    $message = new \DirectoryTree\ImapEngine\Testing\FakeMessage(7, [], implode("\r\n", [
+    $message = new FakeMessage(7, [], implode("\r\n", [
         'Message-ID: <imap-1@acme.example>',
         'From: Jane Doe <jane@acme.example>',
         'To: crm@example.test',
@@ -168,14 +170,14 @@ it('polls the inbound driver and maps IMAP messages', function () {
         'Hello from the mailbox',
     ]));
 
-    $inbound = \Sellinnate\SalesCrm\Inbound\Drivers\ImapDriver::toInbound($message);
+    $inbound = ImapDriver::toInbound($message);
 
     expect($inbound->messageId)->toBe('imap-1@acme.example')
         ->and($inbound->fromEmail)->toBe('jane@acme.example')
         ->and($inbound->subject)->toBe('From IMAP')
         ->and(trim((string) $inbound->text))->toBe('Hello from the mailbox');
 
-    SalesCrm::inbound()->drivers()->extend('memory', fn () => new class([$inbound]) implements \Sellinnate\SalesCrm\Contracts\InboundDriver
+    SalesCrm::inbound()->drivers()->extend('memory', fn () => new class([$inbound]) implements InboundDriver
     {
         public function __construct(private array $emails) {}
 

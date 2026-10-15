@@ -35,10 +35,13 @@ trait InteractsWithCrm
      */
     protected function page(string $view, string $title, array $data = []): View
     {
-        /** @var View $page */
+        /** @var view-string $view */
+        /** @var \Illuminate\View\View $page */
         $page = view($view, $data);
+        /** @var view-string $layout */
+        $layout = (string) config('sales-crm.ui.layout', 'sales-crm::layouts.app');
 
-        return $page->layout((string) config('sales-crm.ui.layout', 'sales-crm::layouts.app'), ['title' => $title])->title($title);
+        return $page->layout($layout, ['title' => $title])->title($title);
     }
 
     protected function notify(string $message, string $tone = 'success'): void

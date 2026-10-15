@@ -34,6 +34,7 @@ use Sellinnate\SalesCrm\Models\Note;
 use Sellinnate\SalesCrm\Models\Person;
 use Sellinnate\SalesCrm\Models\Stage;
 use Sellinnate\SalesCrm\Services\CustomFields;
+use Sellinnate\SalesCrm\Services\DealFields;
 use Sellinnate\SalesCrm\Services\DealRequirements;
 use Sellinnate\SalesCrm\Services\DealTimeline;
 use Sellinnate\SalesCrm\Support\Crm;
@@ -43,13 +44,22 @@ use Sellinnate\SalesCrm\Support\Crm;
  * the fields (stage, amounts, people, operational state, signature and payment, approval,
  * commission, custom fields), the quick actions (note, activity, email, document, call) and the
  * timeline with a counter per kind. Also the body of the full page of a deal.
+ *
+ * @property-read Deal $model
+ * @property-read list<TimelineEntry> $timeline
+ * @property-read array<string, int> $counts
+ * @property-read Collection<int, Activity> $openActivities
+ * @property-read Collection<int, Document> $documents
+ * @property-read array<string, string> $members
+ * @property-read Collection<int, EmailTemplate> $templates
+ * @property-read Collection<int, Person> $workspacePeople
  */
 class DealPanel extends Component
 {
     use InteractsWithCrm;
     use WithFileUploads;
 
-    /** The editable fields of the form, as {@see \Sellinnate\SalesCrm\Services\DealFields} takes them. */
+    /** The editable fields of the form, as {@see DealFields} takes them. */
     public const FIELDS = [
         'title', 'company_name', 'owner_id', 'priority', 'source', 'tags', 'external_ref', 'amount_once', 'deposit', 'recurring',
         'recurring_period', 'recurring_options', 'payment_terms', 'offer_details', 'offer_valid_until', 'expected_close_date',
@@ -109,6 +119,8 @@ class DealPanel extends Component
 
     public bool $showRequirements = false;
 
+    public bool $deleted = false;
+
     public function mount(int $dealId, bool $page = false): void
     {
         $this->dealId = $dealId;
@@ -122,7 +134,7 @@ class DealPanel extends Component
 
     public function render(): View
     {
-        return view('sales-crm::livewire.deal-panel');
+        return view($this->deleted ? 'sales-crm::livewire.deal-deleted' : 'sales-crm::livewire.deal-panel');
     }
 
     public function deal(): Deal
@@ -463,8 +475,10 @@ class DealPanel extends Component
         $activity = Activity::query()->where('deal_id', $this->dealId)->find($activityId);
 
         if ($activity !== null) {
-            app(ManageActivities::class)->complete($activity, $this->outcomes[(string) $activityId] ?? null, $this->viewer());
-            unset($this->outcomes[(string) $activityId]);
+            $key = (string) $activityId;
+            $outcome = array_key_exists($key, $this->outcomes) ? $this->outcomes[$key] : null;
+            app(ManageActivities::class)->complete($activity, $outcome, $this->viewer());
+            $this->outcomes = array_diff_key($this->outcomes, [$key => true]);
             $this->changed((string) __('sales-crm::ui.activity_done'));
         }
     }
@@ -606,6 +620,7 @@ class DealPanel extends Component
     {
         $deal = $this->deal();
         app(DeleteDeal::class)->handle($deal, $this->viewer());
+        $this->deleted = true;
         $this->dispatch('crm-deal-updated');
         $this->notify((string) __('sales-crm::ui.deal_deleted'));
 

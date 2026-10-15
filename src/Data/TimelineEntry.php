@@ -3,10 +3,11 @@
 namespace Sellinnate\SalesCrm\Data;
 
 use Carbon\CarbonImmutable;
+use Sellinnate\SalesCrm\Contracts\TimelineProvider;
 
 /**
  * One entry of the timeline of a deal, a company or a person: a note, an activity done, an email, a
- * change of the history, a document, or a read-only entry of a {@see \Sellinnate\SalesCrm\Contracts\TimelineProvider}.
+ * change of the history, a document, or a read-only entry of a {@see TimelineProvider}.
  */
 final class TimelineEntry
 {

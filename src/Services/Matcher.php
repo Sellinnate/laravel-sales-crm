@@ -2,8 +2,8 @@
 
 namespace Sellinnate\SalesCrm\Services;
 
-use Illuminate\Contracts\Auth\Authenticatable;
 use Closure;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Str;
 use Sellinnate\SalesCrm\Models\Company;
 use Sellinnate\SalesCrm\Models\Person;

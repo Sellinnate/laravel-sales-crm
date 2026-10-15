@@ -19,6 +19,7 @@ use Sellinnate\SalesCrm\Models\DealEvent;
 use Sellinnate\SalesCrm\Models\Note;
 use Sellinnate\SalesCrm\Models\Pipeline;
 use Sellinnate\SalesCrm\Models\StageVisit;
+use Sellinnate\SalesCrm\Services\DealActivityState;
 use Sellinnate\SalesCrm\Services\DefaultPipeline;
 use Sellinnate\SalesCrm\Services\Matcher;
 use Sellinnate\SalesCrm\Support\Crm;
@@ -166,7 +167,7 @@ class DemoSeeder extends Seeder
                 ]))->setWorkspace($workspace)->save();
             }
 
-            app(\Sellinnate\SalesCrm\Services\DealActivityState::class)->refresh($deal->id);
+            app(DealActivityState::class)->refresh($deal->id);
         }
 
         Pipeline::query()->whereKey($pipeline->id)->increment('revision');

@@ -1,6 +1,9 @@
 <?php
 
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
+use Sellinnate\SalesCrm\Actions\BulkUpdateDeals;
 use Sellinnate\SalesCrm\Actions\SaveView;
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Models\Deal;
@@ -22,9 +25,9 @@ it('builds the columns with counts, totals and weighted totals in a constant num
     }
 
     config(['sales-crm.deals.cards_per_column' => 5]);
-    \Illuminate\Support\Facades\DB::enableQueryLog();
+    DB::enableQueryLog();
     $columns = $this->board->columns($this->pipeline, $this->board->query($this->seller, [], $this->pipeline));
-    $queries = count(\Illuminate\Support\Facades\DB::getQueryLog());
+    $queries = count(DB::getQueryLog());
     $column = collect($columns)->first(fn (array $column): bool => $column['stage']->id === $qualified->id);
 
     expect($column['count'])->toBe(6)
@@ -93,7 +96,7 @@ it('saves personal and shared views and keeps only known state', function () {
     app(SaveView::class)->handle($this->seller, null, 'My P1', ['view' => 'kanban']);
     expect(SavedView::query()->count())->toBe(1)->and($view->fresh()->state['view'])->toBe('kanban')->and($view->fresh()->shared)->toBeFalse();
 
-    expect(fn () => app(SaveView::class)->delete($view, $this->other))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+    expect(fn () => app(SaveView::class)->delete($view, $this->other))->toThrow(AuthorizationException::class);
     app(SaveView::class)->delete($view, $this->seller);
     expect(SavedView::query()->count())->toBe(0);
 });
@@ -103,13 +106,13 @@ it('applies bulk actions deal by deal, reporting those left as they were', funct
     $ready = SalesCrm::shared()->createDeal(['title' => 'Ready', 'amount_once' => 100, 'offer_valid_until' => '2030-01-01'], $this->seller);
     $missing = SalesCrm::shared()->createDeal(['title' => 'Missing'], $this->seller);
 
-    $result = app(\Sellinnate\SalesCrm\Actions\BulkUpdateDeals::class)->handle([$ready->id, $missing->id], 'stage', $proposal->id, $this->seller);
+    $result = app(BulkUpdateDeals::class)->handle([$ready->id, $missing->id], 'stage', $proposal->id, $this->seller);
 
     expect($result['done'])->toBe(1)
         ->and($result['skipped'][0]['title'])->toBe('Missing')
         ->and($ready->fresh()->stage_id)->toBe($proposal->id)
         ->and($missing->fresh()->stage_id)->not->toBe($proposal->id);
 
-    $result = app(\Sellinnate\SalesCrm\Actions\BulkUpdateDeals::class)->handle([$ready->id], 'delete', null, $this->seller);
+    $result = app(BulkUpdateDeals::class)->handle([$ready->id], 'delete', null, $this->seller);
     expect($result['done'])->toBe(0)->and($result['skipped'])->toHaveCount(1)->and(Deal::query()->count())->toBe(2);
 });

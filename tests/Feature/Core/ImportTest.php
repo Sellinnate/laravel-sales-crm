@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
@@ -9,6 +10,7 @@ use OpenSpout\Writer\XLSX\Writer;
 use Sellinnate\SalesCrm\Actions\ManageImports;
 use Sellinnate\SalesCrm\Enums\ImportStatus;
 use Sellinnate\SalesCrm\Events\ImportFinished;
+use Sellinnate\SalesCrm\Facades\SalesCrm;
 use Sellinnate\SalesCrm\Models\Deal;
 use Sellinnate\SalesCrm\Models\Note;
 use Sellinnate\SalesCrm\Services\Import\Importer;
@@ -92,7 +94,7 @@ it('updates the deals already imported by their key, without taking back a verif
     $this->imports->run($import->fresh(), $this->admin);
 
     $deal = Deal::query()->where('external_ref', 'K-1')->firstOrFail();
-    \Sellinnate\SalesCrm\Facades\SalesCrm::updateDeal($deal, ['signature_status' => 'signed', 'signature_evidence' => 'https://sign.example/1'], $this->admin);
+    SalesCrm::updateDeal($deal, ['signature_status' => 'signed', 'signature_evidence' => 'https://sign.example/1'], $this->admin);
 
     $second = csvFile('second.csv', [['ID', 'Amount', 'Signature'], ['K-1', '250', 'to sign']]);
     $import = $this->imports->upload(null, $this->pipeline, $second, $this->admin);
@@ -132,7 +134,7 @@ it('imports the chosen sheet of an XLSX file', function () {
 
 it('refuses unsupported files, unknown sheets and imports without columns, for non managers too', function () {
     expect(fn () => $this->imports->upload(null, $this->pipeline, UploadedFile::fake()->create('deck.pdf', 10, 'application/pdf'), $this->admin))->toThrow(ValidationException::class)
-        ->and(fn () => $this->imports->upload(null, $this->pipeline, csvFile('x.csv', [['A'], ['1']]), crmUser()))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->and(fn () => $this->imports->upload(null, $this->pipeline, csvFile('x.csv', [['A'], ['1']]), crmUser()))->toThrow(AuthorizationException::class);
 
     $import = $this->imports->upload(null, $this->pipeline, csvFile('x.csv', [['A'], ['1']]), $this->admin);
 

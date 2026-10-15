@@ -4,6 +4,8 @@ namespace Sellinnate\SalesCrm\Tests;
 
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Mcp\Server\McpServiceProvider;
+use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Sellinnate\SalesCrm\SalesCrmServiceProvider;
@@ -19,12 +21,12 @@ abstract class TestCase extends Orchestra
     {
         $providers = [SalesCrmServiceProvider::class, WorkbenchServiceProvider::class];
 
-        if (class_exists(\Livewire\LivewireServiceProvider::class)) {
-            array_unshift($providers, \Livewire\LivewireServiceProvider::class);
+        if (class_exists(LivewireServiceProvider::class)) {
+            array_unshift($providers, LivewireServiceProvider::class);
         }
 
-        if (class_exists(\Laravel\Mcp\Server\McpServiceProvider::class)) {
-            array_unshift($providers, \Laravel\Mcp\Server\McpServiceProvider::class);
+        if (class_exists(McpServiceProvider::class)) {
+            array_unshift($providers, McpServiceProvider::class);
         }
 
         return $providers;
@@ -43,7 +45,7 @@ abstract class TestCase extends Orchestra
             $config->set('sales-crm.ui.enabled', (bool) env('SALES_CRM_UI', true));
 
             $config->set('database.default', 'testing');
-            $config->set('database.connections.testing', self::testingConnection());
+            $config->set('database.connections.testing', self::databaseConnection());
         });
     }
 
@@ -53,7 +55,7 @@ abstract class TestCase extends Orchestra
      *
      * @return array<string, mixed>
      */
-    private static function testingConnection(): array
+    private static function databaseConnection(): array
     {
         return match (env('SALES_CRM_TEST_DB')) {
             'mysql' => [

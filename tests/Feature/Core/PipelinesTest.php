@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use Sellinnate\SalesCrm\Actions\SavePipeline;
 use Sellinnate\SalesCrm\Actions\SaveStage;
@@ -98,8 +99,8 @@ it('lets only managers configure pipelines and stages', function () {
     $seller = crmUser();
     $pipeline = crmPipeline();
 
-    expect(fn () => app(SavePipeline::class)->handle(null, ['name' => 'Mine'], $seller))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class)
-        ->and(fn () => app(SaveStage::class)->handle($pipeline, ['name' => 'X', 'color' => 'info', 'probability' => 1, 'kind' => 'open'], $seller))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+    expect(fn () => app(SavePipeline::class)->handle(null, ['name' => 'Mine'], $seller))->toThrow(AuthorizationException::class)
+        ->and(fn () => app(SaveStage::class)->handle($pipeline, ['name' => 'X', 'color' => 'info', 'probability' => 1, 'kind' => 'open'], $seller))->toThrow(AuthorizationException::class);
 });
 
 it('reads the first open stage of a pipeline', function () {
