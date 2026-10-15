@@ -1,0 +1,67 @@
+name: Install in a fresh app
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install:
+    name: P${{ matrix.php }} - laravel/laravel ${{ matrix.laravel }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.2'
+            laravel: '^11.0'
+          - php: '8.3'
+            laravel: '^12.0'
+          - php: '8.4'
+            laravel: '^13.0'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          path: package
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, intl, fileinfo
+          coverage: none
+
+      - name: Create a Laravel application
+        run: composer create-project laravel/laravel app "${{ matrix.laravel }}" --prefer-dist --no-interaction
+
+      - name: Require the package from the checkout
+        working-directory: app
+        run: |
+          composer config repositories.sales-crm '{"type": "path", "url": "../package", "options": {"symlink": false}}'
+          composer config minimum-stability dev
+          composer config prefer-stable true
+          composer require "sellinnate/sales-crm:*@dev" livewire/livewire --no-interaction
+
+      - name: Install the CRM with demo data
+        working-directory: app
+        run: |
+          php artisan sales-crm:install --migrate --demo --no-interaction
+          test -f config/sales-crm.php
+          ls database/migrations | grep create_sales_crm_tables
+          deals=$(php artisan tinker --execute='echo \Sellinnate\SalesCrm\Models\Deal::query()->count();' | tail -n1)
+          echo "Demo deals: $deals"
+          test "$deals" -ge 30
+          php artisan route:list --name=sales-crm
+
+      - name: Use the CRM from a feature test of the application
+        working-directory: app
+        run: |
+          cp ../package/.github/install-test/CrmInstallTest.php tests/Feature/CrmInstallTest.php
+          php artisan test --filter=CrmInstallTest

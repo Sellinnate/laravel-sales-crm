@@ -1,0 +1,95 @@
+{
+  "title": "Sales CRM for Laravel",
+  "url": "https://laravel-sales-crm.selli.io",
+  "src": "docs",
+  "out": "site",
+  "engine": "js",
+  "layout": {
+    "spa": true,
+    "header": { "enabled": true },
+    "sidebar": { "collapsible": true, "defaultCollapsed": false },
+    "optionsMenu": {
+      "position": "sidebar-top",
+      "components": { "search": true, "themeSwitch": true }
+    },
+    "footer": {
+      "style": "minimal",
+      "content": "© 2026 Sellinnate S.r.l. — Sales CRM for Laravel. MIT licensed.",
+      "branding": true
+    }
+  },
+  "theme": {
+    "name": "default",
+    "appearance": "system",
+    "codeHighlight": true
+  },
+  "minify": true,
+  "autoTitleFromH1": true,
+  "copyCode": true,
+  "pageNavigation": true,
+  "navigation": [
+    { "title": "Introduction", "path": "/", "icon": "home" },
+    {
+      "title": "Getting Started",
+      "icon": "rocket",
+      "collapsible": false,
+      "children": [
+        { "title": "Installation", "path": "/getting-started/installation", "icon": "download" },
+        { "title": "Quickstart", "path": "/getting-started/quickstart", "icon": "zap" },
+        { "title": "Configuration", "path": "/getting-started/configuration", "icon": "cog" }
+      ]
+    },
+    {
+      "title": "Concepts",
+      "icon": "book-open",
+      "children": [
+        { "title": "Architecture", "path": "/concepts/architecture", "icon": "layout" },
+        { "title": "Pipelines & stages", "path": "/concepts/pipelines", "icon": "columns" },
+        { "title": "Deals", "path": "/concepts/deals", "icon": "briefcase" },
+        { "title": "Companies & people", "path": "/concepts/contacts", "icon": "users" },
+        { "title": "Activities & reminders", "path": "/concepts/activities", "icon": "calendar" },
+        { "title": "Notes & documents", "path": "/concepts/notes-documents", "icon": "file-text" },
+        { "title": "Email", "path": "/concepts/email", "icon": "mail" },
+        { "title": "Import & export", "path": "/concepts/import-export", "icon": "upload" },
+        { "title": "Reports", "path": "/concepts/reports", "icon": "bar-chart" },
+        { "title": "Timeline", "path": "/concepts/timeline", "icon": "clock" },
+        { "title": "Workspaces (multi-tenancy)", "path": "/concepts/workspaces", "icon": "building" },
+        { "title": "Authorization", "path": "/concepts/authorization", "icon": "shield" },
+        { "title": "Events & notifications", "path": "/concepts/events", "icon": "bell" }
+      ]
+    },
+    {
+      "title": "Interfaces",
+      "icon": "monitor",
+      "children": [
+        { "title": "Web UI (Livewire)", "path": "/interfaces/ui", "icon": "monitor" },
+        { "title": "MCP tools", "path": "/interfaces/mcp", "icon": "bot" },
+        { "title": "JSON API", "path": "/interfaces/api", "icon": "code" }
+      ]
+    },
+    {
+      "title": "Extending",
+      "icon": "puzzle",
+      "children": [
+        { "title": "Custom contracts", "path": "/extending/contracts", "icon": "puzzle" },
+        { "title": "Customizing the UI", "path": "/extending/ui", "icon": "palette" }
+      ]
+    },
+    {
+      "title": "Reference",
+      "icon": "list",
+      "children": [
+        { "title": "PHP API (facade)", "path": "/reference/php-api", "icon": "code" },
+        { "title": "Events", "path": "/reference/events", "icon": "bell" },
+        { "title": "Artisan commands", "path": "/reference/commands", "icon": "terminal" },
+        { "title": "Database schema", "path": "/reference/database", "icon": "database" }
+      ]
+    },
+    { "title": "FAQ", "path": "/faq", "icon": "help-circle" },
+    { "title": "GitHub", "path": "https://github.com/Sellinnate/laravel-sales-crm", "icon": "github", "external": true }
+  ],
+  "plugins": {
+    "git": { "commitHistory": true, "maxCommits": 5 },
+    "seo": { "defaultDescription": "Pipelines, deals, contacts, activities and email for any Laravel app: a headless CRM core with an optional Livewire UI." }
+  }
+}

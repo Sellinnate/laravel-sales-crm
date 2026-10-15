@@ -1,0 +1,13 @@
+{
+  // Cloudflare Worker that serves the docmd-built static documentation site
+  // (https://laravel-sales-crm.selli.io). The site is generated into ./site by
+  // `npm run docs:build`.
+  "name": "laravel-sales-crm",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./site",
+    // Serve the generated 404 page on unmatched routes (the site is a
+    // multi-page static export, not a single-page app for hosting purposes).
+    "not_found_handling": "404-page"
+  }
+}

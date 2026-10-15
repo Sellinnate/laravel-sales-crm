@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://laravel-sales-crm.selli.io
+    about: Installation, configuration and guides
+  - name: Report a security issue
+    url: https://github.com/Sellinnate/laravel-sales-crm/security/policy
+    about: Learn how to notify us for sensitive bugs

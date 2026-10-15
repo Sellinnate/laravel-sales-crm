@@ -1,0 +1,38 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: docs build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build the docs site
+        run: npm run docs:build
+
+      - name: Check the generated site
+        run: |
+          test -f site/index.html
+          test -f site/404.html
+          test -f site/getting-started/installation/index.html
+
+      - name: Build the CSS of the UI
+        run: npm run css:build
