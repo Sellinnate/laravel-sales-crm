@@ -71,17 +71,13 @@ class DealPositions
         $table = Crm::table('deals');
 
         foreach (array_chunk($changed, 200, true) as $chunk) {
-            // PostgreSQL reads the bound values as text: the position is cast back to its column type.
-            $cases = implode(' ', array_fill(0, count($chunk), 'WHEN ? THEN CAST(? AS INTEGER)'));
-            $bindings = [];
-
-            foreach ($chunk as $id => $position) {
-                array_push($bindings, $id, $position);
-            }
+            // Integer literals, not bindings: PostgreSQL reads bound values as text, and the cast back
+            // to the column type is spelled differently on every driver.
+            $cases = implode(' ', array_map(fn (int $id, int $position): string => 'WHEN '.$id.' THEN '.$position, array_keys($chunk), $chunk));
 
             Crm::db()->update(
                 'UPDATE '.Crm::db()->getQueryGrammar()->wrapTable($table).' SET position = CASE id '.$cases.' END WHERE id IN ('.implode(',', array_fill(0, count($chunk), '?')).')',
-                [...$bindings, ...array_keys($chunk)],
+                array_keys($chunk),
             );
         }
 

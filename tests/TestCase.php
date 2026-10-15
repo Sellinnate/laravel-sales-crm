@@ -12,6 +12,9 @@ use Sellinnate\SalesCrm\SalesCrmServiceProvider;
 use Workbench\App\Models\User;
 use Workbench\App\Providers\WorkbenchServiceProvider;
 
+use function Orchestra\Testbench\default_migration_path;
+use function Orchestra\Testbench\load_migration_paths;
+
 abstract class TestCase extends Orchestra
 {
     use RefreshDatabase;
@@ -101,9 +104,13 @@ abstract class TestCase extends Orchestra
         return ['driver' => 'sqlite', 'database' => $path, 'prefix' => '', 'foreign_key_constraints' => true];
     }
 
+    /**
+     * Only the paths, for the single migrate:fresh of RefreshDatabase: the helpers that migrate per
+     * test also roll back after each one, which MySQL and PostgreSQL can't undo with the transaction
+     * of the test (DDL commits it on MySQL).
+     */
     protected function defineDatabaseMigrations(): void
     {
-        $this->loadLaravelMigrations();
-        $this->loadMigrationsFrom([__DIR__.'/../workbench/database/migrations', __DIR__.'/database/migrations']);
+        load_migration_paths($this->app, [default_migration_path(), __DIR__.'/../workbench/database/migrations', __DIR__.'/database/migrations']);
     }
 }
