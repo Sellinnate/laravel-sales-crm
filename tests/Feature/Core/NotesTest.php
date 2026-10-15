@@ -65,3 +65,14 @@ it('writes notes on companies and people', function () {
     expect($this->notes->add($company, 'About the company', $this->author)->company_id)->toBe($company->id)
         ->and($this->notes->add($person, 'About Ada', $this->author)->person_id)->toBe($person->id);
 });
+
+it('does not tell a mentioned colleague about a deal they do not see', function () {
+    Notification::fake();
+    config(['sales-crm.authorization.deal_visibility' => 'owner']);
+    app()->forgetScopedInstances();
+
+    $this->notes->add($this->deal, 'Ask @Jane Doe and @Alex Admin about it', $this->author);
+
+    Notification::assertNotSentTo($this->jane, MentionedNotification::class);
+    Notification::assertSentTo($this->admin, MentionedNotification::class);
+});

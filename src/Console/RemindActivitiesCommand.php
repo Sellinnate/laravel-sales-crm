@@ -33,7 +33,7 @@ class RemindActivitiesCommand extends Command
             ->whereNull('reminded_at')
             ->whereNotNull('remind_minutes')
             ->whereNotNull('assigned_to')
-            ->where('due_at', '<=', $now->addDays(2))
+            ->where('due_at', '<=', $now->addMinutes($this->horizonMinutes()))
             ->with(['assignee', 'deal'])
             ->lazyById()
             ->each(function (Activity $activity) use ($now, $stale, $access, &$sent): void {
@@ -67,5 +67,15 @@ class RemindActivitiesCommand extends Command
         $this->components->info($sent.' reminder(s) sent.');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * How far ahead the activities are read: the longest reminder offered, at least two days.
+     */
+    private function horizonMinutes(): int
+    {
+        $options = array_map(intval(...), array_filter((array) config('sales-crm.activities.reminder_options', []), is_numeric(...)));
+
+        return max(2880, ...$options);
     }
 }

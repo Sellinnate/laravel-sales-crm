@@ -118,3 +118,28 @@ it('plans the activities of companies and people too', function () {
 
     expect($onCompany->company_id)->toBe($company->id)->and($onPerson->person_id)->toBe($person->id);
 });
+
+it('sends the reminders longer than two days when they are due', function () {
+    Notification::fake();
+    config(['sales-crm.activities.reminder_options' => [0, 15, 60, 1440, 10080]]);
+    $due = CarbonImmutable::now()->addDays(7)->subMinutes(5);
+    $week = $this->actions->save($this->deal, ['type' => 'meeting', 'title' => 'Kick-off', 'due_date' => $due->toDateString(), 'due_time' => $due->format('H:i'), 'remind_minutes' => 10080], $this->seller);
+
+    $this->artisan('sales-crm:remind-activities')->assertSuccessful();
+
+    Notification::assertSentToTimes($this->seller, ActivityDueNotification::class, 1);
+    expect($week->fresh()->reminded_at)->not->toBeNull();
+});
+
+it('never reminds an assignee of an activity whose deal they no longer see', function () {
+    Notification::fake();
+    config(['sales-crm.authorization.deal_visibility' => 'owner']);
+    app()->forgetScopedInstances();
+    $colleague = crmUser();
+    $this->actions->save($this->deal, ['type' => 'call', 'title' => 'Call', 'due_date' => CarbonImmutable::now()->toDateString(), 'due_time' => CarbonImmutable::now()->addMinutes(10)->format('H:i'), 'remind_minutes' => 15], $this->seller);
+    $this->deal->forceFill(['owner_id' => $colleague->id])->save();
+
+    $this->artisan('sales-crm:remind-activities')->assertSuccessful();
+
+    Notification::assertNotSentTo($this->seller, ActivityDueNotification::class);
+});

@@ -32,7 +32,7 @@ class ActivityDueNotification extends CrmNotification
 
     public function shouldSend(object $notifiable, string $channel): bool
     {
-        $current = Activity::query()->whereKey($this->activity->getKey())->whereNull('done_at')->first();
+        $current = Activity::query()->with('deal')->whereKey($this->activity->getKey())->whereNull('done_at')->first();
 
         return $notifiable instanceof Authenticatable
             && $current !== null
@@ -40,7 +40,8 @@ class ActivityDueNotification extends CrmNotification
             && Crm::sameUser($current->assigned_to, $this->assignedTo)
             && $current->due_at->equalTo(CarbonImmutable::parse($this->dueAt))
             && $current->remind_minutes === $this->remindMinutes
-            && app(Access::class)->worksOn($notifiable, $current);
+            && app(Access::class)->worksOn($notifiable, $current)
+            && ($current->deal === null || app(Access::class)->canSeeDeal($notifiable, $current->deal));
     }
 
     protected function title(): string

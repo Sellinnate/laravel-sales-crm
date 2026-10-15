@@ -4,6 +4,7 @@ namespace Sellinnate\SalesCrm\Notifications;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Sellinnate\SalesCrm\Authorization\Access;
+use Sellinnate\SalesCrm\Models\Deal;
 use Sellinnate\SalesCrm\Models\Note;
 
 /**
@@ -18,7 +19,11 @@ class MentionedNotification extends CrmNotification
 
     public function shouldSend(object $notifiable, string $channel): bool
     {
-        return $notifiable instanceof Authenticatable && app(Access::class)->worksOn($notifiable, $this->note);
+        $deal = $this->note->deal_id === null ? null : Deal::query()->find($this->note->deal_id);
+
+        // Never the title of a deal the user doesn't see (deal_visibility "owner", an Authorizer of the host).
+        return $notifiable instanceof Authenticatable && app(Access::class)->worksOn($notifiable, $this->note)
+            && ($this->note->deal_id === null || ($deal !== null && app(Access::class)->canSeeDeal($notifiable, $deal)));
     }
 
     protected function title(): string
