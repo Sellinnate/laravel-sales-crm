@@ -220,7 +220,10 @@ The body is one email, or `{"emails": [ ... ]}` with up to 100:
 | `reply_to` | string |
 | `headers` | object of header name → value (used to detect auto-replies) |
 
-The response is `202 Accepted` with `{"received": 1, "stored": 1}`. A batch of
+The response is `202 Accepted` with `{"received": 1, "stored": 1, "failed": 0}`.
+When an email of the batch could not be processed (a deadlock, the database
+away) the response is `503` with the same counters: retry the whole batch, the
+emails already stored are recognised by their Message-ID and skipped. A batch of
 more than 100 emails is refused whole with `413` (`{"max": 100}`): split it and
 send it again, nothing of it was stored.
 

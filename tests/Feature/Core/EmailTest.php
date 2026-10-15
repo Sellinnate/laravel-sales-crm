@@ -240,3 +240,25 @@ it('reads the IMAP folders oldest first, from the message after the cursor', fun
         ->and($calls)->toContain('uid')->not->toContain('since')
         ->and($cache->get('sales-crm:imap:'.md5('imap.example.test|imap.example.test|INBOX')))->toBe(42);
 });
+
+it('asks the sender to retry a webhook batch when an email could not be stored', function () {
+    config(['sales-crm.email.inbound.webhook_secret' => 'top-secret']);
+    $payload = json_encode(['emails' => [
+        ['message_id' => 'r-1@acme.example', 'from' => 'jane@acme.example', 'subject' => 'First', 'text' => 'Hello'],
+        ['message_id' => 'r-2@acme.example', 'from' => 'jane@acme.example', 'subject' => 'Second', 'text' => 'Hello'],
+    ]]);
+    $headers = ['CONTENT_TYPE' => 'application/json', 'HTTP_X_SALES_CRM_SIGNATURE' => hash_hmac('sha256', $payload, 'top-secret')];
+    Event::listen(EmailReceived::class, function (EmailReceived $event): void {
+        if ($event->email->message_id === 'r-2@acme.example' && ! app()->bound('crm-test-retried')) {
+            throw new RuntimeException('Deadlock');
+        }
+    });
+
+    $this->call('POST', '/sales-crm/inbound', [], [], [], $headers, $payload)->assertStatus(503)->assertJson(['received' => 2, 'failed' => 1]);
+
+    app()->instance('crm-test-retried', true);
+    $this->call('POST', '/sales-crm/inbound', [], [], [], $headers, $payload)->assertStatus(202)->assertJson(['failed' => 0]);
+
+    expect(Email::query()->where('message_id', 'r-1@acme.example')->count())->toBe(1)
+        ->and(Email::query()->where('message_id', 'r-2@acme.example')->count())->toBe(1);
+});

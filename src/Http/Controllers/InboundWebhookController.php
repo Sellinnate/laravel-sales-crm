@@ -33,6 +33,7 @@ class InboundWebhookController extends Controller
         $payload = $request->json()->all();
         $emails = isset($payload['emails']) && is_array($payload['emails']) ? $payload['emails'] : [$payload];
         $stored = 0;
+        $failed = 0;
 
         // Refused whole, never cut: the sender splits the batch and retries, no email is lost.
         if (count($emails) > self::MAX_BATCH) {
@@ -49,9 +50,12 @@ class InboundWebhookController extends Controller
                 $stored += $inbound->receive(InboundEmail::fromArray($email)) === null ? 0 : 1;
             } catch (Throwable $exception) {
                 report($exception);
+                $failed++;
             }
         }
 
-        return new JsonResponse(['received' => count($emails), 'stored' => $stored], 202);
+        // A failure (a deadlock, the database away) asks the sender to retry the batch: the emails
+        // already stored are recognised by their Message-ID and not stored twice.
+        return new JsonResponse(['received' => count($emails), 'stored' => $stored, 'failed' => $failed], $failed > 0 ? 503 : 202);
     }
 }
