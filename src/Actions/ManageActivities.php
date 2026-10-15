@@ -76,12 +76,12 @@ class ManageActivities
         $hasTime = filled($validated['due_time'] ?? null);
         // «!»: zero seconds, so an activity saved again at the same hour keeps its deadline and reminder.
         $dueAt = CarbonImmutable::createFromFormat('!Y-m-d H:i', $validated['due_date'].' '.($hasTime ? $validated['due_time'] : self::dayOnlyHour()));
-        // A new activity defaults to its author; a change keeps its assignee unless told otherwise
-        // (an explicit empty value leaves it unassigned).
+        // Without the field a new activity goes to its author and a change keeps its assignee; an
+        // explicit empty value leaves it unassigned.
         $assignee = match (true) {
             filled($validated['assigned_to'] ?? null) => $validated['assigned_to'],
-            $activity === null => $this->defaultAssignee($target, $by),
             array_key_exists('assigned_to', $data) => null,
+            $activity === null => $this->defaultAssignee($target, $by),
             default => $activity->assigned_to,
         };
 

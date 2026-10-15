@@ -154,6 +154,7 @@ it('keeps the assignee of an activity changed by someone else, unless asked to c
     $this->actions->save($this->deal, ['type' => 'call', 'title' => 'Call back', 'due_date' => CarbonImmutable::now()->addDay()->toDateString(), 'assigned_to' => ''], $this->seller, $activity);
     expect($activity->fresh()->assigned_to)->toBeNull();
 
-    $new = $this->actions->save($this->deal, ['type' => 'task', 'title' => 'Mine', 'due_date' => CarbonImmutable::now()->addDay()->toDateString(), 'assigned_to' => ''], $this->seller);
-    expect($new->assigned_to)->toBe($this->seller->id);
+    $unassigned = $this->actions->save($this->deal, ['type' => 'task', 'title' => 'Anyone', 'due_date' => CarbonImmutable::now()->addDay()->toDateString(), 'assigned_to' => ''], $this->seller);
+    $mine = $this->actions->save($this->deal, ['type' => 'task', 'title' => 'Mine', 'due_date' => CarbonImmutable::now()->addDay()->toDateString()], $this->seller);
+    expect($unassigned->assigned_to)->toBeNull()->and($mine->assigned_to)->toBe($this->seller->id);
 });

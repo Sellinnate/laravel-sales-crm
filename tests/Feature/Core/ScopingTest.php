@@ -222,3 +222,12 @@ it('never shows the import of another workspace when the browser changes its id'
         ->assertDontSee('beta-secret.csv')
         ->assertDontSee('Secret deal');
 });
+
+it('returns the deal already born from a record only to a user who may see it', function () {
+    $origin = crmTeam('Order 7');
+    $deal = SalesCrm::for($this->beta)->createDealFrom($origin, ['title' => 'Order 7']);
+
+    expect(SalesCrm::for($this->beta)->createDealFrom($origin, ['title' => 'Again'])->is($deal))->toBeTrue()
+        ->and(SalesCrm::for($this->beta)->createDealFrom($origin, ['title' => 'Again'], $this->bob)->is($deal))->toBeTrue()
+        ->and(fn () => SalesCrm::for($this->beta)->createDealFrom($origin, ['title' => 'Again'], $this->alice))->toThrow(AuthorizationException::class);
+});

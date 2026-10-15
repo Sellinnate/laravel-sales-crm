@@ -57,8 +57,11 @@ $activity = SalesCrm::scheduleActivity($deal, [
 | `notes` | optional, ≤ 2000 characters |
 | `person_id` | optional, a person of the same workspace |
 
-**Default assignee**: the author when they work in the workspace, otherwise the
-deal's owner (if they still work there), otherwise nobody.
+**Default assignee** (when `assigned_to` is left out of a new activity): the
+author when they work in the workspace, otherwise the deal's owner (if they
+still work there), otherwise nobody. An explicit empty `assigned_to` leaves the
+activity unassigned; changing an activity without `assigned_to` keeps its
+assignee.
 
 ### All-day activities
 

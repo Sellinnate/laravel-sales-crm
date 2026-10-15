@@ -155,7 +155,7 @@ class CreateDeal
         $existing = $this->existingFor($origin);
 
         if ($existing !== null) {
-            return $existing;
+            return $this->authorized($existing, $by);
         }
 
         if (! isset($data['stage_id']) && ! isset($data['pipeline_id'])) {
@@ -174,11 +174,26 @@ class CreateDeal
         } catch (Throwable $exception) {
             // Created meanwhile by another request for the same record (unique origin).
             if ($exception instanceof UniqueConstraintViolationException && ($existing = $this->existingFor($origin)) !== null) {
-                return $existing;
+                return $this->authorized($existing, $by);
             }
 
             throw $exception;
         }
+    }
+
+    /**
+     * The deal already born from the record, for a user who may see it (the host's code, without a
+     * user, always).
+     *
+     * @throws AuthorizationException
+     */
+    private function authorized(Deal $deal, ?Authenticatable $by): Deal
+    {
+        if ($by !== null) {
+            Gate::forUser($by)->authorize('view', $deal);
+        }
+
+        return $deal;
     }
 
     private function existingFor(Model $origin): ?Deal
