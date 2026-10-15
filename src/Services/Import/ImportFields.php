@@ -38,7 +38,7 @@ class ImportFields
         'external_ref' => ['id', 'ref', 'reference', 'external id', 'external ref', 'codice', 'riferimento', 'rif', 'chiave', 'key'],
         'title' => ['title', 'deal', 'deal name', 'opportunity', 'titolo', 'trattativa', 'opportunita'],
         'stage' => ['stage', 'deal stage', 'pipeline stage', 'status', 'stato trattativa', 'fase', 'pipeline'],
-        'sub_status' => ['sub status', 'substatus', 'reason', 'sotto stato', 'stato'],
+        'sub_status' => ['sub status', 'substatus', 'status', 'reason', 'sotto stato', 'stato'],
         'priority' => ['priority', 'priorita'],
         'owner' => ['owner', 'deal owner', 'salesperson', 'sales rep', 'assigned to', 'responsabile', 'commerciale', 'assegnato a'],
         'source' => ['source', 'lead source', 'channel', 'fonte trattativa', 'fonte', 'canale'],

@@ -3,7 +3,7 @@
 use Sellinnate\SalesCrm\Facades\SalesCrm;
 
 it('renders every page of the UI', function (string $route) {
-    $user = crmUser();
+    $user = crmUser(['is_admin' => true]);
     $deal = SalesCrm::shared()->createDeal(['title' => 'Website redesign', 'company_name' => 'Acme', 'person' => ['first_name' => 'Jane', 'last_name' => 'Doe', 'email' => 'jane@acme.test']], $user);
 
     $parameters = match ($route) {

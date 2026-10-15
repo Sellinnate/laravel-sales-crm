@@ -70,10 +70,10 @@ class ExportDealsController extends Controller
         return SpreadsheetExport::download(
             'deals-'.now()->format('Y-m-d'),
             (string) ($validated['format'] ?? 'csv'),
-            array_values($columns),
+            [(string) __('sales-crm::fields.deal.title'), ...array_values($columns)],
             (function () use ($query, $columns, $custom): iterable {
                 foreach ($query->lazyById(500) as $deal) {
-                    yield array_map(fn (string $column): string => DealColumns::text($deal, $column, $custom), array_keys($columns));
+                    yield [$deal->title, ...array_map(fn (string $column): string => DealColumns::text($deal, $column, $custom), array_keys($columns))];
                 }
             })(),
         );

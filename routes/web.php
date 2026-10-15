@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Route;
 use Livewire\Component;
 use Sellinnate\SalesCrm\Http\Controllers\AssetController;
@@ -50,7 +51,7 @@ if ((bool) config('sales-crm.ui.enabled', true)) {
 
 // A quote sent by email with {{quote_link}}: a temporary signed link, rate limited.
 Route::get($prefix.'/shared/quotes/{document}', [DocumentController::class, 'signed'])
-    ->middleware(['signed', 'throttle:30,1'])
+    ->middleware([SubstituteBindings::class, 'signed', 'throttle:30,1'])
     ->whereNumber('document')
     ->name('sales-crm.documents.signed');
 

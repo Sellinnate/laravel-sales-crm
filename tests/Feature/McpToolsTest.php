@@ -1,0 +1,75 @@
+<?php
+
+use Sellinnate\SalesCrm\Facades\SalesCrm;
+use Sellinnate\SalesCrm\Mcp\SalesCrmServer;
+use Sellinnate\SalesCrm\Mcp\Tools\CrmActivitiesDueTool;
+use Sellinnate\SalesCrm\Mcp\Tools\CrmActivityAddTool;
+use Sellinnate\SalesCrm\Mcp\Tools\CrmDealCreateTool;
+use Sellinnate\SalesCrm\Mcp\Tools\CrmDealGetTool;
+use Sellinnate\SalesCrm\Mcp\Tools\CrmDealMoveTool;
+use Sellinnate\SalesCrm\Mcp\Tools\CrmDealsListTool;
+use Sellinnate\SalesCrm\Mcp\Tools\CrmDealUpdateTool;
+use Sellinnate\SalesCrm\Mcp\Tools\CrmNoteAddTool;
+use Sellinnate\SalesCrm\Mcp\Tools\CrmPipelinesTool;
+use Sellinnate\SalesCrm\Models\Deal;
+
+beforeEach(function () {
+    $this->seller = crmUser(['name' => 'Sam Seller']);
+    $this->pipeline = crmPipeline();
+    $this->deal = SalesCrm::shared()->createDeal(['title' => 'Website redesign', 'company_name' => 'Acme', 'amount_once' => 1500], $this->seller);
+});
+
+it('lists the tools of the server', function () {
+    SalesCrmServer::actingAs($this->seller)->tools()->assertRegistered([
+        CrmPipelinesTool::class, CrmDealsListTool::class, CrmDealGetTool::class, CrmDealCreateTool::class, CrmDealUpdateTool::class,
+        CrmDealMoveTool::class, CrmNoteAddTool::class, CrmActivityAddTool::class, CrmActivitiesDueTool::class,
+    ]);
+});
+
+it('reads pipelines, deals and the details of a deal', function () {
+    SalesCrmServer::actingAs($this->seller)->tool(CrmPipelinesTool::class)->assertOk()->assertSee(['Sales pipeline', 'Proposal sent', '"deals":1']);
+    SalesCrmServer::actingAs($this->seller)->tool(CrmDealsListTool::class, ['search' => 'acme'])->assertOk()->assertSee(['Website redesign', '"count":1']);
+    SalesCrmServer::actingAs($this->seller)->tool(CrmDealGetTool::class, ['deal_id' => $this->deal->id])->assertOk()->assertSee(['Website redesign', 'timeline', 'Deal created']);
+});
+
+it('creates, updates and moves deals with the rules of the CRM', function () {
+    SalesCrmServer::actingAs($this->seller)->tool(CrmDealCreateTool::class, ['title' => 'Mobile app', 'amount_once' => 9000, 'person' => ['first_name' => 'Ada', 'email' => 'ada@acme.example']])
+        ->assertOk()->assertSee(['Deal created', 'Mobile app']);
+    $deal = Deal::query()->where('title', 'Mobile app')->firstOrFail();
+
+    SalesCrmServer::actingAs($this->seller)->tool(CrmDealUpdateTool::class, ['deal_id' => $deal->id, 'fields' => ['next_step' => 'Send the quote']])->assertOk();
+    expect($deal->fresh()->next_step)->toBe('Send the quote');
+
+    $proposal = crmStage($this->pipeline, 'Proposal sent');
+    SalesCrmServer::actingAs($this->seller)->tool(CrmDealMoveTool::class, ['deal_id' => $deal->id, 'stage_id' => $proposal->id])
+        ->assertHasErrors(['requirements.offer_valid_until']);
+
+    SalesCrmServer::actingAs($this->seller)->tool(CrmDealMoveTool::class, ['deal_id' => $deal->id, 'stage_id' => $proposal->id, 'fill' => ['offer_valid_until' => '2030-01-01']])
+        ->assertOk()->assertSee('Proposal sent');
+    expect($deal->fresh()->stage_id)->toBe($proposal->id);
+
+    SalesCrmServer::actingAs($this->seller)->tool(CrmDealMoveTool::class, ['deal_id' => $deal->id, 'stage_id' => 999999])->assertHasErrors();
+});
+
+it('adds notes and activities and lists the activities due', function () {
+    SalesCrmServer::actingAs($this->seller)->tool(CrmNoteAddTool::class, ['deal_id' => $this->deal->id, 'body' => 'Spoke with the CEO'])->assertOk()->assertSee('Note added');
+    SalesCrmServer::actingAs($this->seller)->tool(CrmActivityAddTool::class, ['deal_id' => $this->deal->id, 'type' => 'call', 'title' => 'Call back', 'due_date' => now()->toDateString()])->assertOk()->assertSee('Activity planned');
+    SalesCrmServer::actingAs($this->seller)->tool(CrmActivityAddTool::class, ['deal_id' => $this->deal->id, 'type' => 'call', 'title' => 'Done already', 'due_date' => now()->toDateString(), 'done' => true, 'outcome' => 'OK'])->assertOk()->assertSee('Activity logged');
+    SalesCrmServer::actingAs($this->seller)->tool(CrmActivitiesDueTool::class)->assertOk()->assertSee('Call back')->assertDontSee('Done already');
+});
+
+it('keeps the tools within the scope of the user', function () {
+    useTeams();
+    $alpha = crmTeam('Alpha', $this->seller);
+    $stranger = crmUser();
+    $alphaDeal = SalesCrm::for($alpha)->createDeal(['title' => 'Team secret'], $this->seller);
+
+    SalesCrmServer::actingAs($stranger)->tool(CrmDealGetTool::class, ['deal_id' => $alphaDeal->id])->assertHasErrors(['not found']);
+    SalesCrmServer::actingAs($stranger)->tool(CrmDealsListTool::class, ['search' => 'secret'])->assertSee('"count":0');
+});
+
+it('refuses users without access to the CRM', function () {
+    \Illuminate\Support\Facades\Gate::define('sales-crm.access', fn () => false);
+
+    SalesCrmServer::actingAs($this->seller)->tool(CrmDealsListTool::class)->assertHasErrors(['not allowed']);
+});

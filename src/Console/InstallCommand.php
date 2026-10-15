@@ -13,6 +13,7 @@ class InstallCommand extends Command
 {
     protected $signature = 'sales-crm:install
         {--migrate : Run the migrations after publishing them}
+        {--no-migrate : Do not run the migrations nor ask about them}
         {--demo : Seed demo pipelines, deals, companies and people (never in production)}
         {--force : Overwrite the files already published}';
 
@@ -28,7 +29,7 @@ class InstallCommand extends Command
         $this->callSilently('vendor:publish', ['--tag' => 'sales-crm-migrations', '--force' => (bool) $this->option('force')]);
         $this->components->task('Migrations published to database/migrations');
 
-        if ($this->option('migrate') || ($this->input->isInteractive() && $this->confirm('Run the migrations now?', true))) {
+        if (! $this->option('no-migrate') && ($this->option('migrate') || ($this->input->isInteractive() && $this->confirm('Run the migrations now?', true)))) {
             $this->call('migrate', ['--force' => true]);
         }
 
