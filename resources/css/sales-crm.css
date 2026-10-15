@@ -251,7 +251,7 @@
     .crm-table tbody tr:hover { @apply bg-sunken/60; }
 
     .crm-overlay { @apply fixed inset-0 z-40 bg-slate-900/40; }
-    .crm-modal { @apply fixed inset-x-3 top-[6vh] z-50 mx-auto flex max-h-[88vh] w-auto max-w-lg flex-col rounded-xl border border-line bg-raised shadow-2xl sm:inset-x-auto; }
+    .crm-modal { @apply fixed inset-x-3 top-[6vh] z-50 mx-auto flex max-h-[88vh] w-auto max-w-lg flex-col rounded-xl border border-line bg-raised shadow-2xl sm:inset-x-0; }
     .crm-modal-lg { @apply max-w-3xl; }
     .crm-modal-header { @apply flex items-start justify-between gap-3 border-b border-line px-5 py-3.5; }
     .crm-modal-body { @apply overflow-y-auto px-5 py-4; }
