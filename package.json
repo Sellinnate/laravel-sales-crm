@@ -23,7 +23,7 @@
     "@mgks/docmd": "^0.8.8"
   },
   "devDependencies": {
-    "@tailwindcss/cli": "^4.1.0",
+    "@tailwindcss/cli": "^4.3.4",
     "tailwindcss": "^4.1.0"
   }
 }
